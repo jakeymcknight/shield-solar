@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;600;700&family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<title>SHIELD — Hospital Rooftop Solar Tool</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Archivo, -apple-system, "Segoe UI", Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: #272932; }
+  #app { display: flex; flex: 1; min-height: 0; }
+  #topbar { background: #ffffff; display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-bottom: 3px solid #0F7173; flex-shrink: 0; }
+  .tb-brand { display: flex; align-items: baseline; gap: 12px; }
+  .tb-brand a { font-family: 'Familjen Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #0F7173; text-decoration: none; letter-spacing: .06em; }
+  .tb-brand span { font-size: 12.5px; color: #272932; }
+  .tb-link { font-size: 11.5px; color: #0F7173; text-decoration: none; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  #sidebar { width: 380px; min-width: 340px; background: #272932; color: #e7edf0; display: flex; flex-direction: column; overflow-y: auto; }
+  #mapwrap { flex: 1; position: relative; }
+  #map { width: 100%; height: 100%; }
+  .pad { padding: 16px 18px; }
+  h1 { font-size: 16.5px; font-weight: 600; color: #ffffff; font-family: 'Familjen Grotesk', sans-serif; }
+  .sub { font-size: 12px; color: #a6abb8; margin-top: 4px; line-height: 1.45; }
+
+  .picker { position: relative; margin-top: 12px; }
+  .picker input { width: 100%; padding: 11px 12px; border-radius: 10px; border: 1.5px solid #3d414d; background: #31343f; color: #ffffff; font-size: 14px; }
+  .picker input::placeholder { color: #7d8291; }
+  .dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 2000; background: #31343f; border: 1px solid #4a4f5e; border-radius: 10px; margin-top: 4px; max-height: 300px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  .dropdown.open { display: block; }
+  .dd-item { padding: 9px 12px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .dd-item:hover { background: #3d414d; }
+  .dd-item .cty { color: #7d8291; font-size: 11.5px; }
+  .badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; flex-shrink: 0; }
+  .badge.l6 { background: #F05D5E; color: #ffffff; }
+  .badge.l5 { background: #0F7173; color: #f0f9ff; }
+  .traced-dot { color: #F05D5E; font-size: 11px; }
+
+  .current { display: flex; align-items: center; gap: 8px; margin-top: 12px; background: #31343f; border-radius: 10px; padding: 10px 12px; }
+  .current .nm { font-size: 13.5px; font-weight: 700; color: #ffffff; flex: 1; line-height: 1.3; }
+
+  .bigbtn { width: 100%; margin-top: 12px; padding: 13px; border-radius: 10px; border: none; background: #0F7173; color: #ffffff; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .bigbtn:hover { filter: brightness(1.08); }
+  .bigbtn.drawing { background: #ef4444; color: #fff; }
+  .bigbtn:disabled { opacity: .45; cursor: not-allowed; }
+  .drawbar { display: none; gap: 8px; margin-top: 10px; }
+  .drawbar.show { display: flex; }
+  .drawbar button { flex: 1; padding: 9px 6px; border-radius: 8px; border: 1px solid #4a4f5e; background: #31343f; color: #e7edf0; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .drawbar .finish { background: #0F7173; border-color: #0F7173; color: #ffffff; }
+  .hint { margin-top: 10px; font-size: 12px; color: #F05D5E; background: rgba(240,93,94,.1); border: 1px solid rgba(240,93,94,.35); border-radius: 8px; padding: 9px 11px; line-height: 1.5; display: none; }
+  .hint.show { display: block; }
+
+  .section-title { font-family: 'Familjen Grotesk', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7d8291; margin: 16px 0 8px; }
+  .rooflist { display: flex; flex-direction: column; gap: 6px; }
+  .roofitem { display: flex; align-items: center; justify-content: space-between; background: #31343f; border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+  .roofitem .del { background: none; border: none; color: #f87171; cursor: pointer; font-size: 15px; padding: 2px 6px; }
+  .empty { font-size: 12.5px; color: #7d8291; font-style: italic; padding: 4px 0; }
+
+  .results { background: #31343f; border-radius: 12px; padding: 12px 16px; margin-top: 6px; }
+  .res-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid #3d414d55; font-size: 13px; color: #a6abb8; }
+  .res-row:last-child { border-bottom: none; }
+  .res-row b { color: #ffffff; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+  .res-row.hero b { color: #F05D5E; font-size: 19px; }
+  .results.national { border: 1px solid #F05D5E88; }
+  .results.national .res-row.hero b { color: #f8b0b1; }
+
+  .assump summary { font-size: 12.5px; color: #a6abb8; cursor: pointer; padding: 6px 0; }
+  .assump-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 12.5px; color: #c9cdd6; }
+  .assump-row input { width: 78px; padding: 5px 8px; border-radius: 6px; border: 1px solid #4a4f5e; background: #272932; color: #ffffff; font-size: 13px; text-align: right; }
+  .assump-note { font-size: 11px; color: #7d8291; line-height: 1.5; margin-top: 6px; }
+
+  .exports { display: flex; gap: 8px; margin: 14px 0 20px; }
+  .exports button { flex: 1; padding: 10px 6px; border-radius: 8px; border: 1px solid #4a4f5e; background: #31343f; color: #e7edf0; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .exports button:hover { background: #3d414d; }
+
+  .drawing-cursor { cursor: crosshair !important; }
+  .drawing-cursor * { cursor: crosshair !important; }
+
+  /* key setup overlay */
+  #keyOverlay { position: absolute; inset: 0; z-index: 5000; background: #272932cc; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .keycard { background: #31343f; border: 1px solid #4a4f5e; border-radius: 16px; max-width: 560px; padding: 28px 30px; color: #e7edf0; font-size: 14px; line-height: 1.65; max-height: 90%; overflow-y: auto; }
+  .keycard h2 { font-size: 18px; color: #ffffff; margin-bottom: 10px; }
+  .keycard ol { margin: 10px 0 10px 20px; }
+  .keycard li { margin: 7px 0; }
+  .keycard code { background: #272932; padding: 2px 7px; border-radius: 5px; font-size: 12.5px; color: #F05D5E; }
+  .keycard a { color: #5cc6c8; }
+
+  @media (max-width: 700px) {
+    #app { flex-direction: column-reverse; }
+    #sidebar { width: 100%; min-width: 0; height: 48vh; }
+    #mapwrap { height: 52vh; }
+  }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div class="tb-brand"><a href="https://www.shieldproject.co.uk">SHIELD</a><span>Hospital Rooftop Solar Tool — solar potential &amp; Health-REC impact</span></div>
+  <a class="tb-link" href="https://www.shieldproject.co.uk" target="_blank">shieldproject.co.uk ↗</a>
+</div>
+<div id="app">
+<div id="sidebar">
+  <div class="pad">
+    <h1>☀️ Kenya Referral Hospitals — Rooftop Solar</h1>
+    <div class="sub">All Level 6 national referral and Level 5 county referral public hospitals. Pick a hospital, trace its roofs on Google satellite imagery, get instant solar estimates. Pins auto-correct via Google Places the first time you visit each hospital.</div>
+
+    <div class="picker">
+      <input id="search" placeholder="🔍 Search 54 hospitals — name or county…" autocomplete="off">
+      <div class="dropdown" id="dropdown"></div>
+    </div>
+
+    <div class="current">
+      <span class="nm" id="curName">← Choose a hospital to begin</span>
+      <span class="badge l5" id="curBadge" style="display:none">L5</span>
+    </div>
+
+    <button class="bigbtn" id="drawBtn" onclick="toggleDraw()" disabled>➕ Trace a roof</button>
+    <div class="drawbar" id="drawbar">
+      <button onclick="undoPoint()">↩ Undo point</button>
+      <button class="finish" onclick="finishPoly()">✓ Finish roof</button>
+    </div>
+    <div class="hint" id="hint">Click each corner of a roof. Click the <b>first dot again</b> (or “Finish roof”) to complete. Press <b>Esc</b> to cancel.</div>
+
+    <div class="section-title">Traced roofs — <span id="siteLabel">none selected</span></div>
+    <div class="rooflist" id="rooflist"><div class="empty">No roofs traced yet.</div></div>
+
+    <div class="section-title">This hospital</div>
+    <div class="results">
+      <div class="res-row"><span>Roof area</span><b id="rArea">0 m²</b></div>
+      <div class="res-row"><span>Usable for panels</span><b id="rUsable">0 m²</b></div>
+      <div class="res-row"><span>System size</span><b id="rKwp">0 kWp</b></div>
+      <div class="res-row hero"><span>Annual generation</span><b id="rAnnual">0 MWh</b></div>
+      <div class="res-row"><span>Average per day</span><b id="rDaily">0 kWh</b></div>
+      <div class="res-row"><span>Health-RECs / year</span><b id="rRecs">0</b></div>
+      <div class="res-row"><span>Healthy life-years (20 yr)</span><b id="rHly">0</b></div>
+      <div class="res-row"><span>CO₂e avoided (20 yr)</span><b id="rCo2">0 t</b></div>
+    </div>
+
+    <div class="section-title">All hospitals (traced so far)</div>
+    <div class="results national">
+      <div class="res-row"><span>Hospitals traced</span><b id="nCount">0 / 54</b></div>
+      <div class="res-row"><span>Total roof area</span><b id="nArea">0 m²</b></div>
+      <div class="res-row"><span>Combined system size</span><b id="nKwp">0 kWp</b></div>
+      <div class="res-row hero"><span>Combined annual generation</span><b id="nAnnual">0 MWh</b></div>
+      <div class="res-row"><span>Combined Health-RECs / yr</span><b id="nRecs">0</b></div>
+      <div class="res-row"><span>Healthy life-years (20 yr)</span><b id="nHly">0</b></div>
+    </div>
+
+    <div class="section-title">Assumptions</div>
+    <details class="assump" open>
+      <summary>⚙️ Edit assumptions</summary>
+      <div class="assump-row"><span>Usable share of roof</span><span><input type="number" id="aUsable" value="70" min="1" max="100" step="5" onchange="recalcAll()"> %</span></div>
+      <div class="assump-row"><span>Panel power density</span><span><input type="number" id="aDensity" value="210" min="50" max="300" step="10" onchange="recalcAll()"> W/m²</span></div>
+      <div class="assump-row"><span>Specific yield (this site)</span><span><input type="number" id="aYield" value="1650" min="800" max="2500" step="50" onchange="yieldChanged()" disabled> kWh/kWp·yr</span></div>
+      <div class="assump-note">Yield defaults vary by climate zone: ~1,780 kWh/kWp in arid north/east, ~1,650 at the coast and lake basin, ~1,450–1,600 in the cloudier highlands. Edit per site if you have PVGIS/Global Solar Atlas figures.</div>
+    </details>
+
+    <div class="section-title">Health-REC impact (HEAL)</div>
+    <details class="assump">
+      <summary>❤️ Health impact settings</summary>
+      <div class="assump-row"><span>Catchment population (this site)</span><span><input type="number" id="hPop" value="120000" min="1000" step="10000" onchange="healChanged()" disabled></span></div>
+      <div class="assump-row"><span>Baseline power reliability (this site)</span><span><input type="number" id="hRbase" value="48" min="0" max="100" step="1" onchange="healChanged()" disabled> %</span></div>
+      <div class="assump-row"><span>Data tier (this site)</span><span><select id="hTier" onchange="healChanged()" disabled style="padding:5px 8px;border-radius:6px;border:1px solid #4a4f5e;background:#272932;color:#ffffff;font-size:13px"><option value="A">A — full audit (100%)</option><option value="B" selected>B — partial (80%)</option><option value="C">C — satellite-only (60%)</option></select></span></div>
+      <div class="assump-row"><span>Reliability with solar+storage</span><span><input type="number" id="hRnew" value="98" min="50" max="100" step="1" onchange="recalcAll()"> %</span></div>
+      <div class="assump-row"><span>Carbon intensity</span><span><input type="number" id="hCarbon" value="0.48" min="0" max="2" step="0.01" onchange="recalcAll()"> tCO₂e/MWh</span></div>
+      <div class="assump-row"><span>Health-REC price</span><span>$ <input type="number" id="hPrice" value="100" min="0" step="10" onchange="recalcAll()"> /REC</span></div>
+      <div class="assump-note">HEAL framework: 1 Health-REC = 1 metered MWh. Health Impact Intensity (0.526 healthy life-years/MWh at reference) scales with the reliability uplift vs the 50-point reference and the tier verification discount. Reference values from the HEAL worked example (80 kWp, 120k catchment, Tier B) — set per-site values from the full HEAL calculator where available.</div>
+    </details>
+
+    <div class="exports">
+      <button onclick="copySummary()" id="copyBtn">📋 Copy summary</button>
+      <button onclick="downloadCSV()">⬇️ Download CSV</button>
+    </div>
+    <div class="exports" style="margin-top:-12px">
+      <button onclick="saveProject()">💾 Save project</button>
+      <button onclick="fileInput.click()">📂 Load project</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this.files[0])">
+    </div>
+    <div class="exports" style="margin-top:-12px">
+      <button onclick="makeReport()">📄 PDF report (this hospital)</button>
+      <button onclick="openMapImage()">🖼 Roof map image</button>
+    </div>
+    <div class="sub" id="autosaveNote" style="margin:-10px 0 18px"></div>
+  </div>
+</div>
+<div id="mapwrap">
+  <div id="map"></div>
+  <div id="keyOverlay" style="display:none">
+    <div class="keycard">
+      <h2>🔑 One-time setup: add your Google Maps API key</h2>
+      <p>This tool uses Google's satellite imagery (free for up to 10,000 map views/month). To activate it:</p>
+      <ol>
+        <li>Go to <a href="https://console.cloud.google.com/google/maps-apis" target="_blank">console.cloud.google.com/google/maps-apis</a> and create a project (e.g. “SHIELD Solar”). Add a billing card when prompted — you won't be charged within the free tier.</li>
+        <li>Enable two APIs: <b>Maps JavaScript API</b> and <b>Places API (New)</b>.</li>
+        <li>Go to <b>Keys &amp; Credentials</b> → Create credentials → API key. Copy it.</li>
+        <li>Open this HTML file in a text editor, find the line near the top of the script:<br><code>const GMAPS_KEY = "AIzaSyCKAXUyX8ZnviGhDmngRAlnLR1oH3HbM6k";</code><br>and paste your key between the quotes. Save, reload.</li>
+        <li><b>Once the tool is hosted online</b>, edit the key in the console and restrict it to your websites (e.g. <code>shieldproject.co.uk/*</code> and your <code>*.netlify.app/*</code> address). Note: a referrer-restricted key won't work when opening the file directly from your computer — restrict only after moving to hosting, or keep a separate unrestricted key for local use.</li>
+        <li>Recommended: in the console under Quotas, cap Maps JavaScript API at ~500 map loads/day so billing can never surprise you.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+const GMAPS_KEY = "AIzaSyCKAXUyX8ZnviGhDmngRAlnLR1oH3HbM6k";   // ← paste your Google Maps API key between the quotes
+// ════════════════════════════════════════════════════════════
+
+// name, county, level (6/5), lat, lng, specific yield kWh/kWp/yr
+const HOSPITALS = [
+  ["Kenyatta National Hospital","Nairobi",6,-1.300876,36.806388,1600],
+  ["Moi Teaching & Referral Hospital","Uasin Gishu (Eldoret)",6,0.538332,35.2886,1600],
+  ["Kenyatta University Teaching, Referral & Research Hospital","Nairobi (Kahawa)",6,-1.1805,36.9270,1600],
+  ["Mathari National Teaching & Referral Hospital","Nairobi",6,-1.259489,36.844302,1600],
+  ["National Spinal Injury Referral Hospital","Nairobi",6,-1.2970,36.8000,1600],
+  ["Kisii Teaching & Referral Hospital","Kisii",6,-0.66815,34.7704,1500],
+  ["Jaramogi Oginga Odinga Teaching & Referral Hospital","Kisumu",6,-0.0817,34.7658,1650],
+  ["Nakuru County Referral Hospital (PGH)","Nakuru",5,-0.28133,36.0732,1620],
+  ["Coast General Teaching & Referral Hospital","Mombasa",5,-4.059355,39.677362,1640],
+  ["Embu County Referral Hospital (PGH)","Embu",5,-0.522973,37.453604,1600],
+  ["Machakos Level 5 Hospital","Machakos",5,-1.502321,37.263232,1700],
+  ["Thika Level 5 Hospital","Kiambu (Thika)",5,-1.03678,37.0776,1650],
+  ["Kakamega County General Teaching & Referral Hospital","Kakamega",5,0.2785,34.7499,1550],
+  ["Garissa County Referral Hospital (PGH)","Garissa",5,-0.4530,39.6458,1780],
+  ["Nyeri County Referral Hospital (PGH)","Nyeri",5,-0.42399,36.96113,1550],
+  ["Othaya Level 5 Hospital","Nyeri (Othaya)",5,-0.5399,36.93995,1550],
+  ["Meru Level 5 Hospital","Meru",5,0.060928,37.6641,1600],
+  ["Mama Lucy Kibaki Hospital","Nairobi (Embakasi)",5,-1.2807,36.9043,1600],
+  ["Mbagathi County Referral Hospital","Nairobi",5,-1.307925,36.802242,1600],
+  ["Kerugoya County Referral Hospital","Kirinyaga",5,-0.50132,37.2805,1550],
+  ["Kitui County Referral Hospital","Kitui",5,-1.3666,38.0163,1750],
+  ["Longisa County Referral Hospital","Bomet",5,-0.85793,35.38941,1500],
+  ["Kericho County Referral Hospital","Kericho",5,-0.36896,35.27941,1450],
+  ["Kapenguria County Referral Hospital","West Pokot",5,1.2335,35.1162,1600],
+  ["Busia County Referral Hospital","Busia",5,0.460407,34.104497,1650],
+  ["Bungoma County Referral Hospital","Bungoma",5,0.572,34.557,1600],
+  ["Kitale County Referral Hospital","Trans Nzoia",5,1.0190,35.0060,1580],
+  ["Homa Bay County Teaching & Referral Hospital","Homa Bay",5,-0.52474,34.4599,1650],
+  ["Migori County Referral Hospital","Migori",5,-1.06321,34.4694,1650],
+  ["Siaya County Referral Hospital","Siaya",5,0.063129,34.2839,1650],
+  ["Nyamira County Referral Hospital","Nyamira",5,-0.67554,34.9414,1500],
+  ["Vihiga County Referral Hospital","Vihiga (Mbale)",5,0.0763,34.7240,1550],
+  ["Narok County Referral Hospital","Narok",5,-1.0961,35.8636,1650],
+  ["Kajiado County Referral Hospital","Kajiado",5,-1.8526,36.7832,1750],
+  ["Kabarnet County Referral Hospital","Baringo",5,0.4951,35.735,1650],
+  ["Iten County Referral Hospital","Elgeyo Marakwet",5,0.6743,35.5058,1550],
+  ["Kapsabet County Referral Hospital","Nandi",5,0.2028,35.0954,1550],
+  ["Nanyuki Teaching & Referral Hospital","Laikipia",5,0.019,37.0709,1700],
+  ["JM Kariuki Memorial County Referral Hospital","Nyandarua (Ol Kalou)",5,-0.2707,36.3735,1550],
+  ["Makueni County Referral Hospital","Makueni (Wote)",5,-1.78103,37.62703,1750],
+  ["Chuka County Referral Hospital","Tharaka Nithi",5,-0.32748,37.645496,1600],
+  ["Isiolo County Referral Hospital","Isiolo",5,0.3751,37.5812,1780],
+  ["Marsabit County Referral Hospital","Marsabit",5,2.324839,37.985249,1780],
+  ["Hola County Referral Hospital","Tana River",5,-1.4988,40.030251,1780],
+  ["King Fahad County Referral Hospital","Lamu",5,-2.27857,40.906769,1640],
+  ["Kilifi County Referral Hospital","Kilifi",5,-3.63205,39.85722,1640],
+  ["Msambweni County Referral Hospital","Kwale",5,-4.48007,39.4708,1640],
+  ["Moi County Referral Hospital Voi","Taita Taveta",5,-3.39091,38.56205,1750],
+  ["Wajir County Referral Hospital","Wajir",5,1.7449,40.0664,1780],
+  ["Mandera County Referral Hospital","Mandera",5,3.954424,41.861814,1780],
+  ["Lodwar County Referral Hospital","Turkana",5,3.1176,35.5998,1800],
+  ["Maralal County Referral Hospital","Samburu",5,1.0940,36.7005,1700],
+  ["Murang'a County Referral Hospital","Murang'a",5,-0.71587,37.15985,1600],
+  ["Kiambu County Referral Hospital","Kiambu",5,-1.16938,36.82993,1600]
+].map((h,i)=>({ id:i, name:h[0], county:h[1], level:h[2], lat:h[3], lng:h[4], yield:h[5], _y0:h[5], polys:[], refined:false, heal:{pop:120000, rbase:48, tier:"B"} }));
+
+// HEAL framework reference values (worked example: 80 kWp, 120k catchment, Tier B)
+const HEAL_REF = { hii: 0.526, deliveries: 4.7, uRef: 0.5, tierRef: 0.8 };
+const TIER_F = { A: 1.0, B: 0.8, C: 0.6 };
+
+const N = HOSPITALS.length;
+let cur = null, map = null, gm = null; // gm = google.maps shorthand
+
+// ---------- Google Maps bootstrap ----------
+if (GMAPS_KEY.startsWith("PASTE")) {
+  document.getElementById("keyOverlay").style.display = "flex";
+} else {
+  const s = document.createElement("script");
+  s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(GMAPS_KEY) + "&v=weekly&libraries=places,geometry&callback=initMap&loading=async";
+  s.async = true;
+  s.onerror = () => alert("Could not load Google Maps — check your API key and internet connection.");
+  document.head.appendChild(s);
+}
+
+function initMap() {
+  gm = google.maps;
+  map = new gm.Map(document.getElementById("map"), {
+    center: {lat: 0.35, lng: 37.6}, zoom: 6,
+    mapTypeId: "hybrid",
+    tilt: 0, rotateControl: false, streetViewControl: false,
+    fullscreenControl: true, gestureHandling: "greedy",
+    disableDoubleClickZoom: true,
+    clickableIcons: false
+  });
+
+  loadPinCache();
+  HOSPITALS.forEach(h => {
+    h.marker = new gm.Marker({
+      position: {lat: h.lat, lng: h.lng}, map,
+      title: h.name + " — Level " + h.level
+    });
+    h.marker.addListener("click", () => selectHospital(h, false));
+  });
+
+  map.addListener("click", onMapClick);
+  map.addListener("dblclick", () => { if (drawing && pts.length >= 3) finishPoly(); });
+
+  loadLocal();
+  recalcAll();
+}
+
+// ---------- Places pin refinement (one query per hospital, cached) ----------
+async function refinePin(h) {
+  if (h.refined) return;
+  h.refined = true;
+  try {
+    const { Place } = await gm.importLibrary("places");
+    const { places } = await Place.searchByText({
+      textQuery: h.name + ", " + h.county.replace(/\s*\(.*\)/, "") + ", Kenya",
+      fields: ["location"],
+      locationBias: { lat: h.lat, lng: h.lng },
+      maxResultCount: 1
+    });
+    if (places && places[0] && places[0].location) {
+      const loc = places[0].location;
+      const d = gm.geometry.spherical.computeDistanceBetween(new gm.LatLng(h.lat, h.lng), loc);
+      if (d < 30000) { h.lat = loc.lat(); h.lng = loc.lng(); h.marker.setPosition({lat: h.lat, lng: h.lng}); }
+    }
+  } catch (e) { /* Places not enabled or quota — keep original pin */ }
+  savePinCache();
+}
+function savePinCache() {
+  try {
+    const c = {};
+    HOSPITALS.forEach(h => { if (h.refined) c[h.id] = [h.lat, h.lng]; });
+    localStorage.setItem("ke-pin-cache-v1", JSON.stringify(c));
+  } catch (e) {}
+}
+function loadPinCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem("ke-pin-cache-v1") || "{}");
+    for (const id in c) {
+      const h = HOSPITALS[id]; if (!h) continue;
+      h.lat = c[id][0]; h.lng = c[id][1]; h.refined = true;
+    }
+  } catch (e) {}
+}
+
+// ---------- picker ----------
+const searchEl = document.getElementById("search");
+const ddEl = document.getElementById("dropdown");
+function renderDropdown(q) {
+  const t = q.trim().toLowerCase();
+  const list = HOSPITALS.filter(h => !t || h.name.toLowerCase().includes(t) || h.county.toLowerCase().includes(t));
+  ddEl.innerHTML = list.length ? "" : '<div class="dd-item">No match</div>';
+  list.sort((a,b) => b.level - a.level || a.name.localeCompare(b.name)).forEach(h => {
+    const d = document.createElement("div");
+    d.className = "dd-item";
+    d.innerHTML = `<span>${h.polys.length ? '<span class="traced-dot">●</span> ' : ''}${h.name}<br><span class="cty">${h.county}</span></span><span class="badge l${h.level}">L${h.level}</span>`;
+    d.onclick = () => { selectHospital(h, true); ddEl.classList.remove("open"); searchEl.value = ""; };
+    ddEl.appendChild(d);
+  });
+}
+searchEl.addEventListener("focus", () => { renderDropdown(searchEl.value); ddEl.classList.add("open"); });
+searchEl.addEventListener("input", () => { renderDropdown(searchEl.value); ddEl.classList.add("open"); });
+document.addEventListener("click", e => { if (!e.target.closest(".picker")) ddEl.classList.remove("open"); });
+
+async function selectHospital(h, fly) {
+  if (!map) return;
+  if (drawing) cancelDraw();
+  cur = h;
+  document.getElementById("curName").textContent = h.name;
+  const b = document.getElementById("curBadge");
+  b.style.display = ""; b.textContent = "L" + h.level; b.className = "badge l" + h.level;
+  document.getElementById("siteLabel").textContent = h.county;
+  document.getElementById("drawBtn").disabled = false;
+  const y = document.getElementById("aYield"); y.disabled = false; y.value = h.yield;
+  ["hPop","hRbase","hTier"].forEach(id => document.getElementById(id).disabled = false);
+  document.getElementById("hPop").value = h.heal.pop;
+  document.getElementById("hRbase").value = h.heal.rbase;
+  document.getElementById("hTier").value = h.heal.tier;
+  await refinePin(h);
+  if (fly) { map.panTo({lat: h.lat, lng: h.lng}); map.setZoom(19); }
+  renderList(); recalcAll();
+}
+
+// ---------- drawing ----------
+let drawing = false, pts = [], tempLine = null, tempDots = [];
+function toggleDraw(){ drawing ? cancelDraw() : startDraw(); }
+function startDraw(){
+  if (!cur || !map) return;
+  drawing = true; pts = [];
+  const b = document.getElementById("drawBtn");
+  b.textContent = "✕ Cancel tracing"; b.classList.add("drawing");
+  document.getElementById("drawbar").classList.add("show");
+  document.getElementById("hint").classList.add("show");
+  document.getElementById("map").classList.add("drawing-cursor");
+  map.setOptions({ draggableCursor: "crosshair" });
+}
+function stopDrawUI(){
+  drawing = false;
+  const b = document.getElementById("drawBtn");
+  b.textContent = "➕ Trace a roof"; b.classList.remove("drawing");
+  document.getElementById("drawbar").classList.remove("show");
+  document.getElementById("hint").classList.remove("show");
+  document.getElementById("map").classList.remove("drawing-cursor");
+  map.setOptions({ draggableCursor: null });
+  if (tempLine) { tempLine.setMap(null); tempLine = null; }
+  tempDots.forEach(d => d.setMap(null)); tempDots = [];
+}
+function cancelDraw(){ pts = []; stopDrawUI(); }
+
+function onMapClick(e) {
+  if (!drawing) return;
+  if (pts.length >= 3) {
+    // close if clicking within ~12px of the first vertex
+    const mpp = 156543.03392 * Math.cos(pts[0].lat() * Math.PI/180) / Math.pow(2, map.getZoom());
+    if (gm.geometry.spherical.computeDistanceBetween(pts[0], e.latLng) < 12 * mpp) { finishPoly(); return; }
+  }
+  pts.push(e.latLng); redrawTemp();
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && drawing) cancelDraw(); });
+
+function vertexIcon(first) {
+  return { path: gm.SymbolPath.CIRCLE, scale: 5.5,
+    fillColor: first ? "#ef4444" : "#ffffff", fillOpacity: 1,
+    strokeColor: "#ef4444", strokeWeight: 2 };
+}
+function redrawTemp(){
+  if (tempLine) tempLine.setMap(null);
+  tempDots.forEach(d => d.setMap(null)); tempDots = [];
+  if (!pts.length) return;
+  tempLine = new gm.Polyline({ path: pts, map, strokeColor: "#ef4444", strokeWeight: 2.5 });
+  pts.forEach((p, i) => {
+    tempDots.push(new gm.Marker({ position: p, map, icon: vertexIcon(i === 0), clickable: false }));
+  });
+}
+function undoPoint(){ pts.pop(); redrawTemp(); }
+
+function labelText(p){ return p.name + " · " + Math.round(p.area).toLocaleString() + " m²"; }
+function addPoly(h, latlngs, name) { // latlngs: array of gm.LatLng
+  const area = gm.geometry.spherical.computeArea(latlngs);
+  const polygon = new gm.Polygon({ paths: latlngs, map,
+    strokeColor: "#F05D5E", strokeWeight: 2, fillColor: "#F05D5E", fillOpacity: .35 });
+  let cx = 0, cy = 0;
+  latlngs.forEach(p => { cx += p.lat(); cy += p.lng(); });
+  const poly = { id: Date.now() + Math.random(), polygon, area,
+    name: name || "Roof " + (h.polys.length + 1),
+    latlngs: latlngs.map(p => [p.lat(), p.lng()]) };
+  poly.label = new gm.Marker({
+    position: { lat: cx/latlngs.length, lng: cy/latlngs.length }, map, clickable: false,
+    icon: { path: gm.SymbolPath.CIRCLE, scale: 0 },
+    label: { text: labelText(poly), color: "#F05D5E", fontWeight: "700", fontSize: "12px" }
+  });
+  h.polys.push(poly);
+}
+function finishPoly(){
+  if (pts.length < 3 || !cur) return;
+  addPoly(cur, pts.slice());
+  pts = []; stopDrawUI(); renderList(); recalcAll();
+}
+
+// ---------- results ----------
+function assumptions(){
+  return {
+    usable: (parseFloat(document.getElementById("aUsable").value) || 70) / 100,
+    density: parseFloat(document.getElementById("aDensity").value) || 210
+  };
+}
+function healParams(){
+  return {
+    rnew: parseFloat(document.getElementById("hRnew").value) || 98,
+    carbon: parseFloat(document.getElementById("hCarbon").value) || 0.48,
+    price: parseFloat(document.getElementById("hPrice").value) || 100
+  };
+}
+function calcFor(h){
+  const { usable, density } = assumptions();
+  const { rnew, carbon, price } = healParams();
+  const total = h.polys.reduce((s,p) => s + p.area, 0);
+  const u = total * usable, kwp = u * density / 1000, annual = kwp * h.yield;
+  // HEAL: reliability uplift & tier discount scale the reference Health Impact Intensity
+  const U = Math.max(0, (rnew - h.heal.rbase) / 100);
+  const f = (U / HEAL_REF.uRef) * (TIER_F[h.heal.tier] / HEAL_REF.tierRef);
+  const hii = HEAL_REF.hii * f;                 // healthy life-years per MWh
+  const recs = annual / 1000;                   // 1 REC = 1 MWh
+  const hly = hii * recs;                       // healthy life-years per year
+  const deliveries = HEAL_REF.deliveries * f * recs; // safe deliveries supported per year
+  const co2 = carbon * recs;                    // tCO2e per year
+  return { total, usable: u, kwp, annual, daily: annual/365,
+           recs, hii, hly, hly20: hly*20, deliveries, co2, co220: co2*20,
+           recValue: recs*price };
+}
+function renderList(){
+  const el = document.getElementById("rooflist");
+  if (!cur || !cur.polys.length) { el.innerHTML = '<div class="empty">No roofs traced yet.</div>'; return; }
+  el.innerHTML = "";
+  cur.polys.forEach(p => {
+    const row = document.createElement("div"); row.className = "roofitem";
+    const nameIn = document.createElement("input");
+    nameIn.value = p.name; nameIn.title = "Rename this roof (e.g. Maternity Block)";
+    nameIn.style.cssText = "flex:1;min-width:0;background:transparent;border:none;border-bottom:1px dashed #4a4f5e;color:#ffffff;font-size:13px;padding:2px 0";
+    nameIn.onchange = () => { p.name = nameIn.value.trim() || p.name; nameIn.value = p.name; p.label.setLabel({ text: labelText(p), color: "#F05D5E", fontWeight: "700", fontSize: "12px" }); saveLocal(); };
+    const areaEl = document.createElement("b");
+    areaEl.textContent = Math.round(p.area).toLocaleString() + " m²";
+    areaEl.style.cssText = "margin:0 8px;white-space:nowrap";
+    const del = document.createElement("button"); del.className = "del"; del.textContent = "🗑";
+    del.onclick = () => { p.polygon.setMap(null); p.label.setMap(null); cur.polys = cur.polys.filter(x => x.id !== p.id); renderList(); recalcAll(); };
+    row.append(nameIn, areaEl, del);
+    row.onmouseenter = () => p.polygon.setOptions({ fillOpacity: .6 });
+    row.onmouseleave = () => p.polygon.setOptions({ fillOpacity: .35 });
+    el.appendChild(row);
+  });
+}
+function recalcAll(){
+  if (cur) {
+    const r = calcFor(cur);
+    rArea.textContent = Math.round(r.total).toLocaleString() + " m²";
+    rUsable.textContent = Math.round(r.usable).toLocaleString() + " m²";
+    rKwp.textContent = r.kwp.toFixed(0) + " kWp";
+    rAnnual.textContent = (r.annual/1000).toFixed(1) + " MWh";
+    rDaily.textContent = Math.round(r.daily).toLocaleString() + " kWh";
+    rRecs.textContent = r.recs.toFixed(0);
+    rHly.textContent = Math.round(r.hly20).toLocaleString();
+    rCo2.textContent = Math.round(r.co220).toLocaleString() + " t";
+  }
+  let tArea = 0, tKwp = 0, tAnnual = 0, tRecs = 0, tHly20 = 0, count = 0;
+  HOSPITALS.forEach(h => {
+    if (!h.polys.length) return;
+    count++; const r = calcFor(h);
+    tArea += r.total; tKwp += r.kwp; tAnnual += r.annual; tRecs += r.recs; tHly20 += r.hly20;
+  });
+  nCount.textContent = count + " / " + N;
+  nArea.textContent = Math.round(tArea).toLocaleString() + " m²";
+  nKwp.textContent = Math.round(tKwp).toLocaleString() + " kWp";
+  nAnnual.textContent = (tAnnual/1000).toFixed(1) + " MWh";
+  nRecs.textContent = Math.round(tRecs).toLocaleString();
+  nHly.textContent = Math.round(tHly20).toLocaleString();
+  saveLocal();
+}
+function yieldChanged(){
+  if (!cur) return;
+  cur.yield = parseFloat(document.getElementById("aYield").value) || cur.yield;
+  recalcAll();
+}
+function healChanged(){
+  if (!cur) return;
+  cur.heal.pop = parseFloat(document.getElementById("hPop").value) || cur.heal.pop;
+  cur.heal.rbase = Math.min(100, Math.max(0, parseFloat(document.getElementById("hRbase").value) || 0));
+  cur.heal.tier = document.getElementById("hTier").value;
+  recalcAll();
+}
+
+// ---------- persistence ----------
+function serialize(){
+  return JSON.stringify({
+    v: 2,
+    usable: document.getElementById("aUsable").value,
+    density: document.getElementById("aDensity").value,
+    rnew: document.getElementById("hRnew").value,
+    carbon: document.getElementById("hCarbon").value,
+    price: document.getElementById("hPrice").value,
+    sites: HOSPITALS.filter(h => h.polys.length || h.yield !== h._y0).map(h => ({
+      id: h.id, yield: h.yield, heal: h.heal,
+      polys: h.polys.map(p => ({ ll: p.latlngs, name: p.name }))
+    }))
+  });
+}
+function applyProject(data){
+  HOSPITALS.forEach(h => {
+    h.polys.forEach(p => { p.polygon.setMap(null); p.label.setMap(null); });
+    h.polys = []; h.yield = h._y0;
+  });
+  (data.sites || []).forEach(s => {
+    const h = HOSPITALS[s.id]; if (!h) return;
+    h.yield = s.yield || h.yield;
+    if (s.heal) h.heal = Object.assign({}, h.heal, s.heal);
+    (s.polys || []).forEach(entry => {
+      const ll = Array.isArray(entry) ? entry : entry.ll;         // v1 compat
+      const name = Array.isArray(entry) ? null : entry.name;
+      addPoly(h, ll.map(([lat, lng]) => new gm.LatLng(lat, lng)), name);
+    });
+  });
+  ["usable","density"].forEach(k => { if (data[k]) document.getElementById(k === "usable" ? "aUsable" : "aDensity").value = data[k]; });
+  if (data.rnew) document.getElementById("hRnew").value = data.rnew;
+  if (data.carbon) document.getElementById("hCarbon").value = data.carbon;
+  if (data.price) document.getElementById("hPrice").value = data.price;
+  if (cur) {
+    document.getElementById("aYield").value = cur.yield;
+    document.getElementById("hPop").value = cur.heal.pop;
+    document.getElementById("hRbase").value = cur.heal.rbase;
+    document.getElementById("hTier").value = cur.heal.tier;
+  }
+  renderList(); recalcAll();
+}
+let canStore = true;
+function saveLocal(){
+  if (!canStore) return;
+  try { localStorage.setItem("ke-hospital-solar", serialize()); } catch (e) { canStore = false; }
+}
+function loadLocal(){
+  try {
+    const raw = localStorage.getItem("ke-hospital-solar");
+    if (raw) applyProject(JSON.parse(raw));
+    document.getElementById("autosaveNote").textContent = "Auto-saves in this browser. Use “Save project” for a backup file you can share or load elsewhere.";
+  } catch (e) {
+    canStore = false;
+    document.getElementById("autosaveNote").textContent = "Auto-save unavailable in this browser — use “Save project” before closing.";
+  }
+}
+function saveProject(){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([serialize()], { type: "application/json" }));
+  a.download = "kenya_hospital_solar_project.json"; a.click();
+}
+function loadProjectFile(file){
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { try { applyProject(JSON.parse(r.result)); } catch (e) { alert("Could not read that project file."); } };
+  r.readAsText(file);
+}
+
+// ---------- roof map image (Google Static Maps) ----------
+function staticMapUrl(h, size){
+  let url = "https://maps.googleapis.com/maps/api/staticmap?maptype=satellite&scale=2&size=" + (size || "640x480");
+  if (h.polys.length) {
+    h.polys.forEach(p => {
+      const ptsStr = p.latlngs.concat([p.latlngs[0]])
+        .map(([lat,lng]) => lat.toFixed(5) + "," + lng.toFixed(5)).join("|");
+      url += "&path=" + encodeURIComponent("color:0xf05d5eff|weight:2|fillcolor:0xf05d5e55|" + ptsStr);
+    });
+  } else {
+    url += "&center=" + h.lat + "," + h.lng + "&zoom=18&markers=" + h.lat + "," + h.lng;
+  }
+  return url + "&key=" + encodeURIComponent(GMAPS_KEY);
+}
+function openMapImage(){
+  if (!cur) { alert("Choose a hospital first."); return; }
+  window.open(staticMapUrl(cur, "640x640"), "_blank");
+}
+
+// ---------- promotional PDF report ----------
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function fmt(n, dp){ return n.toLocaleString(undefined, { maximumFractionDigits: dp === undefined ? 0 : dp }); }
+function makeReport(){
+  if (!cur) { alert("Choose a hospital first."); return; }
+  if (!cur.polys.length) { alert("Trace at least one roof first — the report includes the roof map."); return; }
+  const h = cur, r = calcFor(h), { usable, density } = assumptions(), hp = healParams();
+  const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const roofRows = h.polys.map(p =>
+    `<tr><td>${esc(p.name)}</td><td>${fmt(p.area)} m²</td><td>${fmt(p.area*usable*density/1000)} kWp</td></tr>`).join("");
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Solar Assessment — ${esc(h.name)}</title><link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;600;700&family=Archivo:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 16mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Archivo, "Segoe UI", sans-serif; color: #272932; line-height: 1.55; font-size: 12.5px; }
+  .top { border-bottom: 3px solid #0F7173; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .brand { font-family: -apple-system, "Segoe UI", sans-serif; font-size: 12px; color: #0F7173; font-weight: 700; letter-spacing: .12em; }
+  h1 { font-size: 25px; color: #0a4a4b; margin-top: 4px; font-weight: 600; font-family: 'Familjen Grotesk', sans-serif; }
+  .date { font-size: 11.5px; color: #6b7280; }
+  .lede { font-size: 14.5px; margin: 14px 0 18px; }
+  .mapimg { width: 100%; border-radius: 8px; border: 1px solid #d1d5db; }
+  .cap { font-size: 11px; color: #6b7280; margin: 5px 0 18px; }
+  .stats { display: flex; gap: 10px; margin: 16px 0 20px; }
+  .stat { flex: 1; border: 1.5px solid #0F717333; border-top: 4px solid #0F7173; border-radius: 8px; padding: 10px 12px; text-align: center; }
+  .stat b { display: block; font-size: 21px; color: #0a4a4b; font-family: -apple-system, "Segoe UI", sans-serif; }
+  .stat span { font-size: 10.5px; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; font-family: -apple-system, "Segoe UI", sans-serif; }
+  h2 { font-size: 16px; color: #0a4a4b; margin: 20px 0 8px; font-family: 'Familjen Grotesk', sans-serif; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 12.5px; }
+  th { text-align: left; font-family: -apple-system, "Segoe UI", sans-serif; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; border-bottom: 2px solid #0F7173; padding: 5px 8px; }
+  td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+  .impact { background: #edf6f6; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .impact li { margin: 6px 0 6px 18px; }
+  .fine { font-size: 10px; color: #9ca3af; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 10px; line-height: 1.6; }
+  .printbar { position: fixed; top: 0; right: 0; background: #0F7173; color: #fff; border: none; padding: 10px 18px; font-size: 14px; cursor: pointer; border-radius: 0 0 0 10px; font-family: -apple-system, sans-serif; }
+  @media print { .printbar { display: none; } }
+</style></head><body>
+<button class="printbar" onclick="window.print()">🖨 Print / Save as PDF</button>
+<div class="top">
+  <div><div class="brand">SHIELD PROJECT · SOLAR FOR HEALTH</div>
+  <h1>Powering ${esc(h.name)} with the sun</h1></div>
+  <div class="date">Rooftop solar assessment<br>${today}</div>
+</div>
+<p class="lede">The rooftops of ${esc(h.name)} could host an estimated <b>${fmt(r.kwp)} kWp</b> of solar panels, generating around <b>${fmt(r.annual/1000,1)} MWh of clean electricity every year</b> — power for lighting, theatres, cold chain and diagnostics that is cheaper, cleaner and more dependable than the status quo.</p>
+<img class="mapimg" src="${staticMapUrl(h, "640x400")}" alt="Satellite view with assessed roofs outlined">
+<div class="cap">Assessed roof areas (outlined): ${h.polys.map(p => esc(p.name)).join(", ")}. Imagery © Google.</div>
+<div class="stats">
+  <div class="stat"><b>${fmt(r.total)} m²</b><span>roof assessed</span></div>
+  <div class="stat"><b>${fmt(r.kwp)} kWp</b><span>system potential</span></div>
+  <div class="stat"><b>${fmt(r.annual/1000,1)} MWh</b><span>per year</span></div>
+  <div class="stat"><b>${fmt(r.daily)} kWh</b><span>per day, average</span></div>
+</div>
+<h2>What this means for your patients</h2>
+<div class="impact">
+  <p>Reliable electricity is clinical infrastructure. Modelled with the HEAL framework (Health-Energy Attributable Lifetime impact), a system of this size at ${esc(h.name)} would support, over a 20-year life:</p>
+  <ul>
+    <li><b>${fmt(r.hly20)} healthy life-years</b> gained across your catchment of ~${fmt(h.heal.pop)} people — through safer deliveries, newborn care, an unbroken vaccine cold chain, and dependable emergency and night care</li>
+    <li><b>~${fmt(r.deliveries)} safer deliveries supported every year</b></li>
+    <li><b>${fmt(r.co220)} tonnes of CO₂e avoided</b> — displacing diesel generation and unreliable grid supply</li>
+  </ul>
+  <p style="margin-top:8px">Each metered MWh also earns one <b>Health-REC</b> (~${fmt(r.recs)} per year). At current sponsorship values (~$${fmt(hp.price)}/REC) these certificates can contribute <b>~$${fmt(r.recValue)} per year</b> towards system maintenance and hospital operations — solar that helps pay for itself.</p>
+</div>
+<h2>Assessed roof areas</h2>
+<table><tr><th>Roof</th><th>Area</th><th>Panel capacity</th></tr>${roofRows}
+<tr><td><b>Total</b></td><td><b>${fmt(r.total)} m²</b> (${fmt(usable*100)}% usable)</td><td><b>${fmt(r.kwp)} kWp</b></td></tr></table>
+<h2>Next steps</h2>
+<p>These figures are a screening estimate from satellite imagery. The next step is a structural and electrical site survey to confirm roof condition, load profile and system design. The SHIELD Project works with county health teams to develop, finance and maintain hospital solar — including Health-REC sponsorship that supports long-term maintenance. Contact us via <b>shieldproject.co.uk</b>.</p>
+<div class="fine">
+  Assumptions: ${fmt(usable*100)}% of traced roof usable for panels; ${fmt(density)} W/m² panel density; site-specific yield ${fmt(h.yield)} kWh/kWp·yr; performance over 20 years without degradation adjustment. Health impacts per the HEAL framework: reference intensity 0.526 healthy life-years/MWh scaled by reliability uplift (baseline ${fmt(h.heal.rbase)}% → ${fmt(hp.rnew)}% with solar+storage) and data-tier verification discount (Tier ${h.heal.tier}); carbon at ${hp.carbon} tCO₂e/MWh. All figures are indicative and subject to site survey and HEAL verification. Map imagery © Google; report generated by the SHIELD rooftop solar screening tool.
+</div>
+<script>window.addEventListener('load', () => setTimeout(() => window.print(), 900));<\/script>
+</body></html>`;
+  const w = window.open("", "_blank");
+  if (!w) { alert("Pop-up blocked — please allow pop-ups for this page."); return; }
+  w.document.write(html); w.document.close();
+}
+
+// ---------- export ----------
+function summaryRows(){
+  return HOSPITALS.filter(h => h.polys.length).map(h => ({ h, r: calcFor(h) }));
+}
+function copySummary(){
+  const rows = summaryRows();
+  const { usable, density } = assumptions();
+  let out = "KENYA REFERRAL HOSPITALS — ROOFTOP SOLAR POTENTIAL\n" + "=".repeat(52) + "\n";
+  if (!rows.length) out += "\n(No roofs traced yet.)\n";
+  rows.forEach(({h, r}) => {
+    out += `\n${h.name} (Level ${h.level}, ${h.county})\n`;
+    out += `  Roof area: ${Math.round(r.total).toLocaleString()} m² | Usable: ${Math.round(r.usable).toLocaleString()} m²\n`;
+    out += `  System: ${r.kwp.toFixed(0)} kWp | Annual: ${(r.annual/1000).toFixed(1)} MWh (yield ${h.yield} kWh/kWp·yr)\n`;
+    out += `  HEAL: ${Math.round(r.recs)} Health-RECs/yr | ${Math.round(r.hly20).toLocaleString()} healthy life-years (20 yr) | ${Math.round(r.co220).toLocaleString()} tCO2e (20 yr)\n`;
+  });
+  const tKwp = rows.reduce((s,x) => s + x.r.kwp, 0), tAnnual = rows.reduce((s,x) => s + x.r.annual, 0);
+  out += `\nTOTAL (${rows.length} hospitals): ${Math.round(tKwp).toLocaleString()} kWp, ${(tAnnual/1000).toFixed(1)} MWh/yr\n`;
+  out += `Assumptions: ${(usable*100).toFixed(0)}% usable roof, ${density} W/m². Screening estimates only.\n`;
+  navigator.clipboard.writeText(out).then(() => {
+    copyBtn.textContent = "✅ Copied!";
+    setTimeout(() => copyBtn.textContent = "📋 Copy summary", 1500);
+  });
+}
+function downloadCSV(){
+  const rows = summaryRows();
+  let csv = "hospital,county,level,roof_area_m2,usable_m2,system_kwp,yield_kwh_per_kwp_yr,annual_mwh,daily_kwh,recs_per_yr,hii_hly_per_mwh,healthy_life_years_20yr,deliveries_per_yr,tco2e_20yr,rec_value_usd_per_yr,catchment_pop,baseline_reliability_pct,data_tier\n";
+  rows.forEach(({h, r}) => {
+    csv += `"${h.name}","${h.county}",${h.level},${Math.round(r.total)},${Math.round(r.usable)},${r.kwp.toFixed(1)},${h.yield},${(r.annual/1000).toFixed(2)},${Math.round(r.daily)},${r.recs.toFixed(1)},${r.hii.toFixed(3)},${Math.round(r.hly20)},${r.deliveries.toFixed(0)},${Math.round(r.co220)},${Math.round(r.recValue)},${h.heal.pop},${h.heal.rbase},${h.heal.tier}\n`;
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = "kenya_hospital_solar_potential.csv"; a.click();
+}
+window.initMap = initMap;
+</script>
+</body>
+</html>
