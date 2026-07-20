@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHIELD — Hospital Site Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Archivo:wght@400;500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#0F7173; --teal-dark:#0B5A5C; --ink:#272932;
+    --mint:#DCE9E7; --mint-light:#EEF4F3; --line:#C9D8D6;
+    --white:#FFFFFF; --err:#A02020; --gold:#C8912F;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--white); color:var(--ink);
+    font-family:'Source Sans 3','Source Sans Pro',Arial,Helvetica,sans-serif;
+    font-size:17px; line-height:1.55;}
+  h1,h2,h3,legend{font-family:'Familjen Grotesk',Arial,Helvetica,sans-serif;}
+  .wrap{max-width:820px; margin:0 auto; padding:0 20px;}
+
+  .topbar{background:var(--white); border-bottom:1px solid #E8E8E8; padding:16px 0;}
+  .topbar .wrap{display:flex; align-items:center; gap:14px;}
+  .wordmark{font-family:'Familjen Grotesk',Arial,sans-serif; font-weight:700;
+    font-size:26px; letter-spacing:0.5px; color:var(--ink);}
+  .wordmark span{color:#BBB; font-weight:400; margin-left:12px;}
+  .topbar small{color:#666; font-size:14px;}
+
+  /* stage progress */
+  .progress{background:var(--mint-light); border-bottom:1px solid var(--line); padding:14px 0;}
+  .progress .wrap{display:flex; gap:12px; flex-wrap:wrap;}
+  .chip{display:flex; align-items:center; gap:10px; font-size:15px; color:#5C6664;
+    font-weight:600;}
+  .chip .dot{width:26px; height:26px; border-radius:50%; background:#CBD8D6; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Familjen Grotesk',Arial,sans-serif; font-weight:700; font-size:14px;}
+  .chip.active{color:var(--teal);}
+  .chip.active .dot{background:var(--teal);}
+  .chip .arrow{color:#AABBB8; margin:0 4px;}
+
+  .hero{background:var(--mint); padding:44px 0 52px;}
+  .herocard{background:var(--white); border-radius:20px; padding:34px 38px; max-width:660px;}
+  .herocard h1{color:var(--teal); font-size:34px; font-weight:700; margin:0 0 12px; line-height:1.15;}
+  .herocard p{margin:0; font-size:17px;}
+
+  main{padding:40px 0 90px;}
+  .reassure{background:var(--mint-light); border-radius:12px; padding:16px 20px; margin:0 0 30px; font-size:16px;}
+  .reassure strong{color:var(--teal);}
+
+  fieldset{border:1px solid var(--line); background:var(--white); border-radius:16px;
+    padding:26px 26px 16px; margin:0 0 26px;}
+  legend{font-size:23px; font-weight:700; color:var(--teal); padding:0 10px; margin-left:-10px;}
+  .sub{font-size:15px; color:#5C6664; margin:2px 0 18px;}
+  label{display:block; font-weight:600; font-size:16px; margin:16px 0 6px;}
+  .hint{font-weight:400; color:#5C6664; font-size:14px; display:block; margin-top:2px;}
+  input[type=text], input[type=number], input[type=email], input[type=tel], select, textarea{
+    width:100%; padding:11px 13px; font-size:16px; font-family:inherit;
+    border:1px solid var(--line); border-radius:8px; background:var(--white); color:var(--ink);}
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--teal); border-color:var(--teal);}
+  textarea{min-height:84px; resize:vertical;}
+  .row{display:flex; gap:16px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:190px;}
+  .checks label, .radios label{font-weight:400; margin:8px 0; display:flex;
+    align-items:flex-start; gap:10px; cursor:pointer; font-size:16px;}
+  .checks input, .radios input{width:18px; height:18px; margin-top:3px; flex-shrink:0; accent-color:var(--teal);}
+
+  /* stage 2 map screen */
+  .steps{counter-reset:s; margin:0 0 14px; padding:0; list-style:none;}
+  .steps li{counter-increment:s; margin:8px 0; padding-left:36px; position:relative; font-size:15.5px;}
+  .steps li::before{content:counter(s); position:absolute; left:0; top:1px;
+    width:24px; height:24px; border-radius:50%; background:var(--teal); color:#fff;
+    font-family:'Familjen Grotesk',Arial,sans-serif; font-weight:700; font-size:14px;
+    display:flex; align-items:center; justify-content:center;}
+  .searchrow{display:flex; gap:10px; margin:6px 0 12px; flex-wrap:wrap;}
+  .searchrow input{flex:1; min-width:200px;}
+  #map{height:68vh; min-height:480px; border-radius:12px; border:1px solid var(--line); margin-top:6px;}
+  .mapbtns{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  button.tool{background:var(--white); color:var(--teal); border:2px solid var(--teal);
+    border-radius:0; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer;
+    font-family:'Archivo',Arial,sans-serif; text-transform:uppercase; letter-spacing:1px;}
+  button.tool:hover{background:var(--mint-light);}
+  button.tool.active{background:var(--teal); color:#fff;}
+  button.tool:disabled{opacity:0.45; cursor:not-allowed;}
+  #roofList{list-style:none; padding:0; margin:12px 0 0;}
+  #roofList li{background:var(--mint-light); border-radius:8px; padding:9px 14px; margin:6px 0;
+    font-size:14.5px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  #roofList a{color:var(--err);}
+  .estimate{background:var(--mint); border-radius:12px; padding:18px 22px; margin-top:16px;}
+  .estimate h3{margin:0 0 10px; color:var(--teal); font-size:18px; font-weight:700;}
+  .estgrid{display:flex; gap:24px; flex-wrap:wrap;}
+  .estgrid div{min-width:130px;}
+  .estgrid .n{font-family:'Familjen Grotesk',Arial,sans-serif; font-weight:700; font-size:28px; color:var(--teal);}
+  .estgrid .l{font-size:13px; color:#3F4A48;}
+  .estimate .small{font-size:13px; color:#3F4A48; margin:10px 0 0;}
+  #mapStatus{font-size:14px; color:var(--teal); font-weight:600; margin-top:8px; min-height:20px;}
+  .offlineNote{display:none; background:#FBF3E3; border-radius:8px; padding:12px 16px;
+    font-size:14.5px; margin-top:10px;}
+
+  .filebox{border:2px dashed var(--line); border-radius:12px; padding:24px; text-align:center;
+    background:var(--mint-light); cursor:pointer; margin-top:8px; display:block;}
+  .filebox:hover{border-color:var(--teal);}
+  .filebox p{margin:4px 0; color:#5C6664; font-size:14px; font-weight:400;}
+  .filebox .big{color:var(--teal); font-size:16px; font-weight:600;}
+  #fileList{list-style:none; padding:0; margin:10px 0 0;}
+  #fileList li{background:var(--mint-light); border-radius:8px; padding:9px 14px; margin:6px 0;
+    font-size:14px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  #fileList a{color:var(--err);}
+
+  button.primary{background:var(--teal); color:#fff; border:none; border-radius:0;
+    padding:17px 32px; font-size:15px; font-weight:600; cursor:pointer; width:100%;
+    font-family:'Archivo',Arial,sans-serif; text-transform:uppercase; letter-spacing:1.5px;}
+  button.primary:hover{background:var(--teal-dark);}
+  button.ghost{background:none; border:none; color:var(--teal); font-size:15px; cursor:pointer;
+    text-decoration:underline; font-family:inherit; padding:12px 0;}
+  .stagebtns{display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-top:10px;}
+  .stagebtns .primary{flex:1; min-width:260px; width:auto;}
+  .req{color:var(--teal); font-weight:700;}
+
+  #doneBox{display:none; background:var(--mint); border-radius:16px; padding:26px; margin-top:26px;}
+  #doneBox h2{color:var(--teal); margin:0 0 10px; font-size:24px; font-weight:700;}
+  #doneBox ol{padding-left:20px; margin:10px 0;} #doneBox li{margin:8px 0;}
+  #doneBox a.mailbtn{display:inline-block; background:var(--teal); color:#fff; text-decoration:none;
+    border-radius:0; padding:14px 26px; font-weight:600; margin-top:10px;
+    font-family:'Archivo',Arial,sans-serif; text-transform:uppercase; letter-spacing:1.5px; font-size:14px;}
+  #doneBox a.mailbtn:hover{background:var(--teal-dark);}
+  #doneBox .small{font-size:14px; color:#3F4A48; margin-top:12px;}
+  .error{color:var(--err); font-size:14px; display:none; margin-top:4px;}
+  .stageErr{display:none; background:#F8E9E9; border-radius:8px; padding:12px 16px;
+    color:var(--err); font-size:15px; margin-top:12px;}
+
+  .teaser{display:none; background:#FBF3E3; border-left:none; border-radius:12px; padding:18px 22px; margin-top:14px; font-size:16px;}
+  .teaser strong{color:var(--teal);}
+  .resgrid{display:flex; gap:16px; flex-wrap:wrap; margin:18px 0;}
+  .rescard{background:var(--mint); border-radius:14px; padding:18px 20px; flex:1; min-width:170px;}
+  .rescard .n{font-family:'Familjen Grotesk',Arial,sans-serif; font-weight:700; font-size:30px; color:var(--teal);}
+  .rescard .l{font-size:13.5px; color:#3F4A48; margin-top:4px;}
+  table.restable{border-collapse:collapse; width:100%; margin:10px 0 22px; font-size:15px;}
+  table.restable th{background:var(--teal); color:#fff; text-align:left; padding:9px 12px; font-weight:600;}
+  table.restable td{border:1px solid var(--line); padding:8px 12px;}
+  table.restable tr:nth-child(even) td{background:var(--mint-light);}
+  footer{background:var(--teal); color:var(--mint); font-size:14px; text-align:center; padding:26px 20px;}
+  footer b{color:#fff; font-family:'Familjen Grotesk',Arial,sans-serif; letter-spacing:0.5px;}
+  @media (max-width:540px){
+    .row{flex-direction:column; gap:0;}
+    .herocard{padding:26px 22px;} .herocard h1{font-size:27px;}
+    fieldset{padding:20px 18px 12px;}
+    #map{height:55vh; min-height:360px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="wordmark">SHIELD<span>|</span></div>
+    <small>For Hospitals — Site Assessment</small>
+  </div>
+</div>
+
+<div class="progress">
+  <div class="wrap">
+    <div class="chip active" id="chip1"><span class="dot">1</span> Map your site</div>
+    <span class="chip arrow">→</span>
+    <div class="chip" id="chip2"><span class="dot">2</span> About your facility</div>
+    <span class="chip arrow">→</span>
+    <div class="chip" id="chip3"><span class="dot">3</span> Your results</div>
+  </div>
+</div>
+
+<!-- ==================== STAGE 1: MAP ==================== -->
+<div id="stage1">
+  <main>
+  <div class="wrap">
+    <h1 style="color:var(--teal); font-size:34px; font-weight:700; margin:8px 0 8px;">Could your hospital run on sunshine?</h1>
+    <p class="sub" style="font-size:16.5px;">Find your facility on the satellite map, tap the corners of your roofs, and see in seconds how much solar they could carry. It takes about five minutes — and it's the most useful five minutes of this whole assessment.</p>
+    <ol class="steps">
+      <li><strong>Find your facility.</strong> Search your town or hospital name, or paste GPS numbers, then zoom in until you can see the buildings clearly.</li>
+      <li><strong>Drop the pin.</strong> When your facility is in the middle of the map, press "Pin my facility".</li>
+      <li><strong>Outline the roofs.</strong> Press "Draw a roof", tap each corner, press "Finish roof". Repeat for every good roof — flat or gently sloping, not shaded by trees or towers.</li>
+    </ol>
+    <div class="searchrow">
+      <input type="text" id="placeSearch" placeholder="Search town or facility, e.g. Meru Hospital Kenya">
+      <button type="button" class="tool" id="btnSearch">Search</button>
+    </div>
+    <div class="searchrow">
+      <input type="text" id="gps" placeholder="Or paste GPS, e.g. -1.2921, 36.8219">
+      <button type="button" class="tool" id="btnGps">Go to GPS</button>
+    </div>
+    <div id="map"></div>
+    <div class="offlineNote" id="offlineNote">
+      The map needs an internet connection and doesn't seem to be loading. You can still continue — fill in the forms and SHIELD will map your site with you by phone.
+    </div>
+    <div class="mapbtns">
+      <button type="button" class="tool" id="btnPin">Pin my facility</button>
+      <button type="button" class="tool" id="btnDraw">Draw a roof</button>
+      <button type="button" class="tool" id="btnUndo" disabled>Undo last corner</button>
+      <button type="button" class="tool" id="btnFinish" disabled>Finish roof</button>
+      <button type="button" class="tool" id="btnCancel" disabled>Cancel drawing</button>
+    </div>
+    <div id="mapStatus"></div>
+    <ul id="roofList"></ul>
+
+    <div class="estimate" id="estimate" style="display:none">
+      <h3>Your indicative solar potential</h3>
+      <div class="estgrid">
+        <div><div class="n" id="estArea">–</div><div class="l">m² of roof outlined</div></div>
+        <div><div class="n" id="estKwp">–</div><div class="l">indicative system size (kWp)</div></div>
+        <div><div class="n" id="estMwh">–</div><div class="l">indicative generation (MWh/yr)</div></div>
+        <div><div class="n" id="estCo2">–</div><div class="l">indicative tCO2e avoided/yr</div></div>
+      </div>
+      <p class="small">A first approximation, assuming about 70% of outlined roof is usable and typical African solar yield.</p>
+    </div>
+
+    <fieldset style="margin-top:22px;">
+      <legend>Two quick power facts</legend>
+      <p class="sub">These let us preview what solar could save you, before the full forms.</p>
+      <label>What do you currently use for power? Tick all that apply.</label>
+      <div class="checks">
+        <label><input type="checkbox" name="src" value="National grid"> Connection to the national grid</label>
+        <label><input type="checkbox" name="src" value="Diesel/petrol generator"> A diesel or petrol generator</label>
+        <label><input type="checkbox" name="src" value="Existing solar"> Some solar panels already</label>
+        <label><input type="checkbox" name="src" value="Gas (fridges)"> Gas (for example gas vaccine fridges)</label>
+        <label><input type="checkbox" name="src" value="None"> No power source at all</label>
+      </div>
+      <div class="row">
+        <div>
+          <label>Hours of electricity in a normal day
+            <span class="hint">Count only hours when lights and sockets really work.</span>
+            <input type="number" id="hrsPower" min="0" max="24" placeholder="e.g. 12">
+          </label>
+        </div>
+        <div>
+          <label>Monthly electricity bill, roughly (KSh)
+            <span class="hint">Skip if not connected.</span>
+            <input type="text" id="billAmt" placeholder="e.g. 1,500,000">
+          </label>
+        </div>
+        <div>
+          <label>Monthly use in kWh, if your bills show it
+            <input type="number" id="kwhMonth" min="0" placeholder="e.g. 55000">
+          </label>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="teaser" id="teaser"></div>
+
+    <div class="stagebtns">
+      <button type="button" class="primary" id="toStage2">Continue — see what this could save →</button>
+    </div>
+    <p class="sub" style="margin-top:6px;">Next: a 15-minute form about your facility. It unlocks the full picture — your 20-year cost savings, and the lives reliable power could help save.</p>
+  </div>
+  </main>
+</div>
+
+<!-- ==================== STAGE 2: FORMS ==================== -->
+<div id="stage2" style="display:none">
+  <main>
+  <div class="wrap">
+    <h1 style="color:var(--teal); font-size:32px; font-weight:700; margin:6px 0 8px;">Now, about your facility</h1>
+    <p class="sub" style="font-size:16px;">This is what turns your roof outlines into a real plan: how big a system you need, what the lease would cost, what you'd save — and what those savings could do for your patients.</p>
+    <div class="reassure">
+      <strong>Estimates are welcome.</strong> If you don't know an exact number, your best guess is far more useful than a blank. There are no wrong answers, and nothing here affects whether your facility is selected.
+    </div>
+
+    <form id="healForm" novalidate>
+
+      <fieldset>
+        <legend>1. Your facility</legend>
+        <label>Facility name <span class="req">*</span>
+          <input type="text" id="facName" required>
+          <span class="error" id="err-facName">Please enter the facility name.</span>
+        </label>
+        <div class="row">
+          <div>
+            <label>Type of facility
+              <select id="facType">
+                <option>Health post / dispensary</option>
+                <option>Health centre</option>
+                <option selected>District hospital</option>
+                <option>Regional / referral hospital</option>
+                <option>Other</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label>Number of beds
+              <input type="number" id="beds" min="0" placeholder="e.g. 60">
+            </label>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Country
+              <input type="text" id="country">
+            </label>
+          </div>
+          <div>
+            <label>District / town
+              <input type="text" id="district">
+            </label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>2. The people you serve</legend>
+        <label>Roughly how many people live in the area your facility serves?
+          <span class="hint">Your catchment population. A rough figure is fine — 20,000? 100,000? 300,000?</span>
+          <input type="number" id="catchment" min="0" placeholder="e.g. 120000">
+        </label>
+        <label>How sure are you about that number?</label>
+        <div class="radios">
+          <label><input type="radio" name="catchConf" value="From official records"> It comes from official records</label>
+          <label><input type="radio" name="catchConf" value="Informed estimate" checked> It's an informed estimate</label>
+          <label><input type="radio" name="catchConf" value="Rough guess"> It's a rough guess</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>3. Your services in a normal month</legend>
+        <p class="sub">Think of a typical month in the last year. Estimates are fine.</p>
+        <div class="row">
+          <div>
+            <label>Babies delivered per month
+              <input type="number" id="deliveries" min="0" placeholder="e.g. 110">
+            </label>
+          </div>
+          <div>
+            <label>Caesarean sections per month
+              <input type="number" id="csections" min="0" placeholder="0 if none done here">
+            </label>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Outpatients seen per day
+              <input type="number" id="opdDay" min="0" placeholder="e.g. 120">
+            </label>
+          </div>
+          <div>
+            <label>Patients admitted per month
+              <input type="number" id="admissions" min="0" placeholder="e.g. 200">
+            </label>
+          </div>
+        </div>
+        <label>Do you run childhood vaccination here?</label>
+        <div class="radios">
+          <label><input type="radio" name="vax" value="Yes, we store vaccines on site" checked> Yes — we store vaccines in a fridge on site</label>
+          <label><input type="radio" name="vax" value="Yes, vaccines brought in for sessions"> Yes — but vaccines are brought in on the day</label>
+          <label><input type="radio" name="vax" value="No"> No</label>
+        </div>
+        <label>Children vaccinated in a normal month, roughly
+          <input type="number" id="vaxKids" min="0" placeholder="e.g. 250">
+        </label>
+        <label>Where do these service numbers come from?</label>
+        <div class="radios">
+          <label><input type="radio" name="svcConf" value="Facility registers / HMIS reports" checked> Our registers or monthly reports</label>
+          <label><input type="radio" name="svcConf" value="Memory / estimate"> Mostly from memory</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>4. More about your electricity</legend>
+        <label>Is electricity usually available at night, when the maternity ward and emergencies need it?</label>
+        <div class="radios">
+          <label><input type="radio" name="night" value="Usually yes"> Usually yes</label>
+          <label><input type="radio" name="night" value="Sometimes" checked> Sometimes — we can't rely on it</label>
+          <label><input type="radio" name="night" value="Rarely or never"> Rarely or never</label>
+        </div>
+        <label>How often do power cuts interrupt patient care — a delivery, an operation, an emergency at night?</label>
+        <div class="radios">
+          <label><input type="radio" name="interrupt" value="Most days"> Most days</label>
+          <label><input type="radio" name="interrupt" value="A few times a week" checked> A few times a week</label>
+          <label><input type="radio" name="interrupt" value="A few times a month"> A few times a month</label>
+          <label><input type="radio" name="interrupt" value="Rarely"> Rarely</label>
+        </div>
+        <div class="row">
+          <div>
+            <label>Monthly spend on generator fuel, roughly
+              <input type="text" id="fuelAmt" placeholder="e.g. 600,000">
+            </label>
+          </div>
+          <div>
+            <label>Generator size, if you know it
+              <input type="text" id="genSize" placeholder="e.g. 30 kVA — skip if unsure">
+            </label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>5. Equipment that depends on power</legend>
+        <label>Which of these do you have? Tick all that apply.</label>
+        <div class="checks" id="equipChecks">
+          <label><input type="checkbox" name="eq" value="Vaccine fridge"> Vaccine fridge</label>
+          <label><input type="checkbox" name="eq" value="Blood bank fridge"> Blood bank fridge</label>
+          <label><input type="checkbox" name="eq" value="Operating theatre"> Operating theatre</label>
+          <label><input type="checkbox" name="eq" value="Oxygen concentrator"> Oxygen concentrator(s)</label>
+          <label><input type="checkbox" name="eq" value="Newborn incubator/warmer"> Newborn incubator or warmer</label>
+          <label><input type="checkbox" name="eq" value="Laboratory"> Laboratory equipment</label>
+          <label><input type="checkbox" name="eq" value="Ultrasound/X-ray"> Ultrasound or X-ray</label>
+          <label><input type="checkbox" name="eq" value="Electric water pump"> Electric water pump</label>
+        </div>
+        <label>What stops working when the power goes off, and what does that mean for patients?
+          <span class="hint">In your own words. This is one of the most useful answers on the form.</span>
+          <textarea id="outageImpact" placeholder="e.g. The vaccine fridge warms up and we discard doses; at night the midwives use phone torches..."></textarea>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>6. If solar cut your bills</legend>
+        <p class="sub">Hospitals in SHIELD's programme typically save 10% of their bill during the lease years and 40–50% after. Knowing your priorities lets your results show what those savings could do for patients.</p>
+        <label>If money were freed from the electricity bill, what would the hospital most likely spend it on? Tick up to three.</label>
+        <div class="checks">
+          <label><input type="checkbox" name="reinvest" value="medicines"> Ending stock-outs of essential medicines</label>
+          <label><input type="checkbox" name="reinvest" value="staff"> Hiring additional nurses or midwives</label>
+          <label><input type="checkbox" name="reinvest" value="oxygen"> Reliable medical oxygen supply</label>
+          <label><input type="checkbox" name="reinvest" value="referral"> An emergency referral / ambulance fund</label>
+          <label><input type="checkbox" name="reinvest" value="specialist"> A specialist drugs fund (e.g. cancer, NCDs)</label>
+          <label><input type="checkbox" name="reinvest" value="maintenance"> Equipment repair and maintenance</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>7. Your electricity bills</legend>
+        <p class="sub">Bills tell us how much power you use and pay for, so the solar system is sized correctly. Photos taken with a phone are perfectly fine.</p>
+        <label for="bills" class="filebox">
+          <span class="big">Add bills — the last 6 to 12 months if you can</span>
+          <p>Electricity bills, fuel receipts for the generator, or both.</p>
+          <p>Photos (JPG/PNG) or PDF. Tap here to choose files.</p>
+          <input type="file" id="bills" multiple accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" style="display:none">
+        </label>
+        <ul id="fileList"></ul>
+        <p class="sub" id="fileNote" style="display:none">These files stay on your device for now — you will attach them to the email in the final step.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>8. Your details</legend>
+        <div class="row">
+          <div>
+            <label>Your name <span class="req">*</span>
+              <input type="text" id="contactName" required>
+              <span class="error" id="err-contactName">Please enter your name.</span>
+            </label>
+          </div>
+          <div>
+            <label>Your role
+              <input type="text" id="contactRole" placeholder="e.g. Hospital Administrator">
+            </label>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Email <span class="req">*</span>
+              <input type="email" id="contactEmail" required>
+              <span class="error" id="err-contactEmail">Please enter an email address.</span>
+            </label>
+          </div>
+          <div>
+            <label>Phone / WhatsApp
+              <input type="tel" id="contactPhone">
+            </label>
+          </div>
+        </div>
+        <label>Anything else you would like us to know?
+          <textarea id="notes"></textarea>
+        </label>
+        <div class="checks">
+          <label><input type="checkbox" id="consent"> I agree that SHIELD may use this information, including the bills and map outlines I provide, to assess and plan a solar installation and to estimate its health impact. <span class="req">*</span></label>
+          <span class="error" id="err-consent">Please tick the agreement box.</span>
+        </div>
+      </fieldset>
+
+      <div class="stagebtns">
+        <button type="button" class="ghost" id="backToMap">← Back to the map</button>
+        <button type="button" class="primary" id="toStage3">See my results →</button>
+      </div>
+      <div class="stageErr" id="stage1Err">A few required fields are missing — they're marked in red above.</div>
+    </form>
+  </div>
+  </main>
+</div>
+
+<!-- ==================== STAGE 3: RESULTS ==================== -->
+<div id="stage3" style="display:none">
+  <main>
+  <div class="wrap">
+    <h1 style="color:var(--teal); font-size:32px; font-weight:700; margin:6px 0 8px;">Your results</h1>
+    <p class="sub" style="font-size:16px;">A first, deliberately conservative picture from your answers and roof outlines. SHIELD's engineers confirm everything from your bills and a site visit.</p>
+    <div id="results"></div>
+    <div class="stagebtns">
+      <button type="button" class="ghost" id="backToForm2">← Change my answers</button>
+      <button type="button" class="primary" id="downloadBtn">Download my PDF report</button>
+    </div>
+
+    <div id="doneBox">
+      <h2>Almost done — two steps left</h2>
+      <ol>
+        <li>Two files have just been <strong>downloaded to this device</strong> (check your Downloads folder): your <strong>PDF assessment report</strong> and a small data file for SHIELD's analysts.</li>
+        <li>Email both files <strong>together with your bill photos</strong> to <strong id="shieldEmailText"></strong>. The button below opens a ready-made email — just attach the files before sending.</li>
+      </ol>
+      <a class="mailbtn" id="mailLink" href="#">Open email to SHIELD</a>
+      <p class="small">No email on this device? Send the downloaded file and bill photos by WhatsApp instead, or from any computer later. Nothing is lost — everything is saved in the file.</p>
+    </div>
+  </div>
+  </main>
+</div>
+
+<footer><b>SHIELD</b> · Solar Hospital Innovation for Energy Leasing Demonstrator · Your answers are used only for planning and impact measurement.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+(function(){
+  var SHIELD_EMAIL = "jacobmcknight@gmail.com"; // change to your intake address
+
+  // ============================================================
+  // GOOGLE MAPS API KEY
+  // Paste your key between the quotes to use Google satellite
+  // imagery (sharper in most of Africa). Get one at
+  // console.cloud.google.com → APIs & Services → "Maps JavaScript API"
+  // and restrict it to your website's domain.
+  // The map requires this key — there is no fallback imagery.
+  // ============================================================
+  var GOOGLE_MAPS_API_KEY = "";
+
+  // ---- sizing assumptions for the indicative estimate ----
+  var USABLE_FRACTION = 0.70;   // share of outlined roof usable for panels
+  var M2_PER_KWP = 6;           // roof area per kWp installed
+  var YIELD_KWH_PER_KWP = 1500; // conservative African yield
+  var TCO2_PER_MWH = 0.7;       // blended diesel/grid displacement factor
+
+  var form = document.getElementById("healForm");
+  document.getElementById("shieldEmailText").textContent = SHIELD_EMAIL;
+
+  /* ================= STAGE SWITCHING ================= */
+  function setStage(n){
+    ["stage1", "stage2", "stage3"].forEach(function(id, i){
+      document.getElementById(id).style.display = (n === i + 1) ? "block" : "none";
+      document.getElementById("chip" + (i + 1)).classList.toggle("active", n === i + 1);
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  document.getElementById("toStage2").addEventListener("click", function(){ setStage(2); });
+  document.getElementById("backToMap").addEventListener("click", function(){ setStage(1); });
+  document.getElementById("backToForm2").addEventListener("click", function(){ setStage(2); });
+  document.getElementById("toStage3").addEventListener("click", function(){
+    var ok = true;
+    [["facName", !!val("facName")],
+     ["contactName", !!val("contactName")],
+     ["contactEmail", !!val("contactEmail")],
+     ["consent", document.getElementById("consent").checked]
+    ].forEach(function(pair){
+      showErr(pair[0], !pair[1]);
+      if(!pair[1]) ok = false;
+    });
+    document.getElementById("stage1Err").style.display = ok ? "none" : "block";
+    if(!ok){
+      var firstErr = document.querySelector(".error[style*='block']");
+      if(firstErr) firstErr.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setStage(3);
+    renderResults();
+  });
+
+  // the map is the front door — load it immediately
+  window.addEventListener("load", function(){ ensureMap(); });
+
+  /* ================= MAP (provider-agnostic) ================= */
+  var api = null;
+  var roofs = [];            // {latlngs:[{lat,lng}...], area_m2, remove:fn}
+  var drawing = false, drawPts = [];
+  var pinLatLng = null;
+  var mapBootStarted = false, googleFailed = false, googleArrived = false;
+
+  function setStatus(t){ document.getElementById("mapStatus").textContent = t || ""; }
+  function showOffline(show){ document.getElementById("offlineNote").style.display = show ? "block" : "none"; }
+
+  function mapFail(msg){
+    var note = document.getElementById("offlineNote");
+    note.textContent = msg + " You can still press Finish below — your form answers are valuable on their own, and SHIELD will map your site with you by phone.";
+    note.style.display = "block";
+    setStatus("");
+  }
+  function ensureMap(){
+    if(api || mapBootStarted) { if(api) autoLocate(); return; }
+    mapBootStarted = true;
+    if(!GOOGLE_MAPS_API_KEY){
+      mapFail("The map is not configured (missing Google Maps key).");
+      return;
+    }
+    var s = document.createElement("script");
+    s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(GOOGLE_MAPS_API_KEY) + "&loading=async&callback=__initGmapCb";
+    s.async = true;
+    s.onerror = function(){ if(!api) mapFail("Could not reach Google Maps — check your internet connection and reload."); };
+    document.head.appendChild(s);
+    setTimeout(function(){ if(!googleArrived && !api) mapFail("The map is taking too long to load — check your connection and reload."); }, 12000);
+  }
+  window.__initGmapCb = function(){ googleArrived = true; if(!api) initGoogle(); };
+  window.gm_authFailure = function(){
+    googleFailed = true;
+    document.getElementById("map").innerHTML = "";
+    mapFail("Google Maps rejected the API key. (SHIELD: check the key's restrictions in Google Cloud Console.)");
+  };
+
+  // try a list of queries in turn until one geocodes
+  function geocodeChain(cands, done){
+    var i = 0;
+    (function next(){
+      if(i >= cands.length) return done(null, null);
+      var q = cands[i++];
+      api.geocode(q, function(ll){ ll ? done(ll, q) : next(); });
+    })();
+  }
+  // full query first, then progressively broader (drop leading parts)
+  function searchCandidates(q){
+    var parts = q.split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+    var out = [q];
+    for(var i = 1; i < parts.length; i++) out.push(parts.slice(i).join(", "));
+    return out.filter(function(v, idx, a){ return v && a.indexOf(v) === idx; });
+  }
+
+  // when the map is ready, jump towards the facility from stage-1 answers
+  function autoLocate(){
+    if(pinLatLng) return;
+    var q = [val("facName"), val("district"), val("country")].filter(Boolean).join(", ");
+    if(!q || !api) return;
+    if(document.getElementById("placeSearch").value.trim() === ""){
+      document.getElementById("placeSearch").value = q;
+    }
+    setStatus("Looking for your facility from your answers…");
+    geocodeChain(searchCandidates(q), function(ll, matched){
+      if(ll){
+        api.setView(ll.lat, ll.lng, matched === q ? 16 : 13);
+        setStatus(matched === q
+          ? "Is this your area? Zoom in until you can see your buildings, then pin your facility."
+          : "We found " + matched + " — pan and zoom to your facility, then pin it.");
+      }else{
+        setStatus("Couldn't find it automatically — search above or paste GPS numbers.");
+      }
+    });
+  }
+
+  function onMapClick(ll){
+    if(!drawing) return;
+    drawPts.push(ll);
+    api.renderTemp(drawPts);
+    updateDrawButtons();
+  }
+
+  // ---------- Google Maps implementation ----------
+  function initGoogle(){
+    var el = document.getElementById("map");
+    el.innerHTML = "";
+    var gmap = new google.maps.Map(el, {
+      center: { lat: 1.5, lng: 22 }, zoom: 3,
+      mapTypeId: "hybrid", tilt: 0,
+      streetViewControl: false, fullscreenControl: true,
+      mapTypeControl: false, gestureHandling: "greedy"
+    });
+    var marker = null, tempShapes = [];
+    gmap.addListener("click", function(e){
+      onMapClick({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+    });
+    function clearTemp(){
+      tempShapes.forEach(function(s){ s.setMap(null); });
+      tempShapes = [];
+    }
+    api = {
+      provider: "google",
+      setView: function(lat, lng, zoom){ gmap.setCenter({lat:lat, lng:lng}); gmap.setZoom(zoom); },
+      center: function(){ var c = gmap.getCenter(); return { lat: c.lat(), lng: c.lng() }; },
+      zoom: function(){ return gmap.getZoom(); },
+      setPin: function(lat, lng){
+        if(marker) marker.setMap(null);
+        marker = new google.maps.Marker({ position: {lat:lat, lng:lng}, map: gmap, title: "Your facility" });
+      },
+      renderTemp: function(pts){
+        clearTemp();
+        if(pts.length === 1){
+          tempShapes.push(new google.maps.Circle({ map: gmap, center: pts[0], radius: 1.5,
+            strokeColor: "#C8912F", fillColor: "#C8912F", fillOpacity: 0.9, strokeWeight: 1 }));
+        }else if(pts.length === 2){
+          tempShapes.push(new google.maps.Polyline({ map: gmap, path: pts,
+            strokeColor: "#C8912F", strokeWeight: 2, strokeOpacity: 0.8 }));
+        }else{
+          tempShapes.push(new google.maps.Polygon({ map: gmap, paths: pts,
+            strokeColor: "#C8912F", strokeWeight: 2, strokeOpacity: 0.8,
+            fillColor: "#C8912F", fillOpacity: 0.2 }));
+        }
+      },
+      clearTemp: clearTemp,
+      addRoof: function(pts, label){
+        var poly = new google.maps.Polygon({ map: gmap, paths: pts,
+          strokeColor: "#C8912F", strokeWeight: 2,
+          fillColor: "#C8912F", fillOpacity: 0.35 });
+        return function(){ poly.setMap(null); };
+      },
+      geocode: function(q, cb){
+        try{
+          new google.maps.Geocoder().geocode({ address: q }, function(res, status){
+            if(status === "OK" && res && res.length){
+              var loc = res[0].geometry.location;
+              cb({ lat: loc.lat(), lng: loc.lng() });
+            }else if(status === "REQUEST_DENIED"){
+              osmGeocode(q, cb); // key lacks Geocoding API — search via OSM, imagery stays Google
+            }else cb(null);
+          });
+        }catch(e){ osmGeocode(q, cb); }
+      }
+    };
+    showOffline(false);
+    setStatus("Google satellite imagery loaded.");
+    autoLocate();
+  }
+
+  // OSM geocoder — used only if the Google key lacks the Geocoding API
+  function osmGeocode(q, cb){
+    fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q))
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res && res.length) cb({ lat: parseFloat(res[0].lat), lng: parseFloat(res[0].lon) });
+        else cb(null);
+      })
+      .catch(function(){ cb(null); });
+  }
+
+  /* ================= shared map UI handlers ================= */
+  document.getElementById("btnSearch").addEventListener("click", doSearch);
+  document.getElementById("placeSearch").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); doSearch(); }
+  });
+  function doSearch(){
+    var q = document.getElementById("placeSearch").value.trim();
+    if(!q || !api) return;
+    setStatus("Searching…");
+    geocodeChain(searchCandidates(q), function(ll, matched){
+      if(ll){
+        api.setView(ll.lat, ll.lng, matched === q ? 16 : 13);
+        setStatus(matched === q
+          ? "Now zoom in until you can see your buildings clearly, then pin your facility."
+          : "Couldn't find the exact name, but found " + matched + " — pan and zoom from there, then pin your facility.");
+      }else{
+        setStatus("Nothing found — try just your town and country (e.g. Meru, Kenya), or paste GPS numbers.");
+      }
+    });
+  }
+
+  document.getElementById("btnGps").addEventListener("click", function(){
+    var raw = document.getElementById("gps").value.trim();
+    var m = raw.match(/(-?\d+(?:\.\d+)?)[ ,;]+(-?\d+(?:\.\d+)?)/);
+    if(!m || !api){ setStatus("Please paste two numbers, e.g. -1.2921, 36.8219"); return; }
+    api.setView(parseFloat(m[1]), parseFloat(m[2]), 18);
+    setStatus("Zoom and pan until your facility is centred, then pin it.");
+  });
+
+  document.getElementById("btnPin").addEventListener("click", function(){
+    if(!api) return;
+    var c = api.center();
+    pinLatLng = c;
+    api.setPin(c.lat, c.lng);
+    document.getElementById("gps").value = c.lat.toFixed(6) + ", " + c.lng.toFixed(6);
+    setStatus("Facility pinned. Now press 'Draw a roof' and tap the corners of each good roof.");
+    saveDraft();
+  });
+
+  var btnDraw = document.getElementById("btnDraw"),
+      btnUndo = document.getElementById("btnUndo"),
+      btnFinish = document.getElementById("btnFinish"),
+      btnCancel = document.getElementById("btnCancel");
+
+  btnDraw.addEventListener("click", function(){
+    if(!api) return;
+    if(api.zoom() < 16){ setStatus("Zoom in closer first — you should be able to see individual roofs."); return; }
+    drawing = true; drawPts = [];
+    btnDraw.classList.add("active");
+    btnCancel.disabled = false;
+    updateDrawButtons();
+    setStatus("Tap each corner of the roof. At least 3 corners, then press 'Finish roof'.");
+  });
+  btnCancel.addEventListener("click", cancelDrawing);
+  btnUndo.addEventListener("click", function(){
+    drawPts.pop(); api.renderTemp(drawPts); updateDrawButtons();
+  });
+  btnFinish.addEventListener("click", function(){
+    if(drawPts.length < 3 || !api) return;
+    var area = polygonAreaM2(drawPts);
+    api.clearTemp();
+    var label = "Roof " + (roofs.length + 1) + " — about " + Math.round(area) + " m²";
+    var removeFn = api.addRoof(drawPts.slice(), label);
+    roofs.push({ latlngs: drawPts.map(function(p){ return { lat: p.lat, lng: p.lng }; }),
+      area_m2: Math.round(area), remove: removeFn });
+    drawing = false; drawPts = [];
+    btnDraw.classList.remove("active");
+    btnCancel.disabled = true;
+    updateDrawButtons(); renderRoofs();
+    setStatus("Roof saved. Draw another, or press Finish below when you're done.");
+  });
+  function cancelDrawing(){
+    drawing = false; drawPts = [];
+    if(api) api.clearTemp();
+    btnDraw.classList.remove("active"); btnCancel.disabled = true;
+    updateDrawButtons(); setStatus("");
+  }
+  function updateDrawButtons(){
+    btnUndo.disabled = !(drawing && drawPts.length > 0);
+    btnFinish.disabled = !(drawing && drawPts.length >= 3);
+  }
+
+  // planar area with latitude correction — accurate enough for roofs
+  function polygonAreaM2(pts){
+    var R = 6371008.8, lat0 = pts[0].lat * Math.PI / 180;
+    var xy = pts.map(function(p){
+      return { x: R * (p.lng * Math.PI / 180) * Math.cos(lat0), y: R * (p.lat * Math.PI / 180) };
+    });
+    var a = 0;
+    for(var i = 0; i < xy.length; i++){
+      var j = (i + 1) % xy.length;
+      a += xy[i].x * xy[j].y - xy[j].x * xy[i].y;
+    }
+    return Math.abs(a / 2);
+  }
+
+  function renderRoofs(){
+    var ul = document.getElementById("roofList");
+    ul.innerHTML = "";
+    roofs.forEach(function(r, idx){
+      var li = document.createElement("li");
+      li.innerHTML = "<span>Roof " + (idx + 1) + " — about " + r.area_m2 + " m²</span>";
+      var rm = document.createElement("a");
+      rm.href = "#"; rm.textContent = "remove";
+      rm.onclick = function(e){
+        e.preventDefault();
+        if(r.remove) r.remove();
+        roofs.splice(idx, 1); renderRoofs();
+      };
+      li.appendChild(rm);
+      ul.appendChild(li);
+    });
+    updateEstimate();
+  }
+
+  function totalRoofArea(){
+    return roofs.reduce(function(s, r){ return s + r.area_m2; }, 0);
+  }
+  function estKwp(){ return totalRoofArea() * USABLE_FRACTION / M2_PER_KWP; }
+  function estMwh(){ return estKwp() * YIELD_KWH_PER_KWP / 1000; }
+
+  function updateEstimate(){
+    var box = document.getElementById("estimate");
+    if(!roofs.length){ box.style.display = "none"; return; }
+    box.style.display = "block";
+    document.getElementById("estArea").textContent = totalRoofArea().toLocaleString();
+    document.getElementById("estKwp").textContent = Math.round(estKwp());
+    document.getElementById("estMwh").textContent = estMwh().toFixed(1);
+    document.getElementById("estCo2").textContent = (estMwh() * mixEF().ef).toFixed(1);
+    refreshTeaser();
+  }
+
+  function refreshTeaser(){
+    var t = document.getElementById("teaser");
+    if(!roofs.length){ t.style.display = "none"; return; }
+    var f = null;
+    try{ f = computeFinance(computeSolar()); }catch(e){}
+    t.style.display = "block";
+    if(f && f.lease){
+      t.innerHTML = "<strong>Here is what that could mean:</strong> with your bill of KSh " + money(f.billMonthly) +
+        " a month, a right-sized system (about " + fmt(f.recKwp, 0) + " kWp) under SHIELD's no-upfront-cost lease could free up around <strong>KSh " +
+        money(f.avgSaveYr) + " a year on average over 20 years</strong> — money for medicines, staff and oxygen. Continue below to see your full cost savings and the lives reliable power could help save.";
+    }else{
+      t.innerHTML = "<strong>Good roofs!</strong> Enter your monthly bill in the box above to preview what solar could save you — then continue below to see your full cost savings and health impact.";
+    }
+  }
+
+
+  /* ================= FILES ================= */
+  var billsInput = document.getElementById("bills");
+  var fileList = document.getElementById("fileList");
+  var chosenFiles = [];
+  billsInput.addEventListener("change", function(){
+    for(var i = 0; i < billsInput.files.length; i++) chosenFiles.push(billsInput.files[i]);
+    renderFiles(); billsInput.value = "";
+  });
+  function renderFiles(){
+    fileList.innerHTML = "";
+    document.getElementById("fileNote").style.display = chosenFiles.length ? "block" : "none";
+    chosenFiles.forEach(function(f, idx){
+      var li = document.createElement("li");
+      var kb = Math.round(f.size / 1024);
+      li.innerHTML = "<span>" + escapeHtml(f.name) + " (" + kb + " KB)</span>";
+      var rm = document.createElement("a");
+      rm.href = "#"; rm.textContent = "remove";
+      rm.onclick = function(e){ e.preventDefault(); chosenFiles.splice(idx, 1); renderFiles(); };
+      li.appendChild(rm);
+      fileList.appendChild(li);
+    });
+  }
+  function escapeHtml(s){ var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+  /* ================= DRAFT AUTOSAVE ================= */
+  var FIELDS = ["facName","facType","beds","country","district","gps","catchment","deliveries",
+    "csections","opdDay","admissions","vaxKids","hrsPower","billAmt","fuelAmt","genSize",
+    "outageImpact","contactName","contactRole","contactEmail","contactPhone","notes","placeSearch","kwhMonth"];
+  function saveDraft(){
+    try{
+      var d = {};
+      FIELDS.forEach(function(id){ d[id] = document.getElementById(id).value; });
+      window.localStorage.setItem("healDraft", JSON.stringify(d));
+    }catch(e){}
+  }
+  function loadDraft(){
+    try{
+      var raw = window.localStorage.getItem("healDraft");
+      if(!raw) return;
+      var d = JSON.parse(raw);
+      FIELDS.forEach(function(id){ if(d[id]) document.getElementById(id).value = d[id]; });
+    }catch(e){}
+  }
+  loadDraft();
+  document.addEventListener("input", function(e){
+    saveDraft();
+    if(e.target && (e.target.id === "billAmt" || e.target.id === "kwhMonth" || e.target.id === "hrsPower" || e.target.name === "src")) refreshTeaser();
+  });
+
+  /* ================= HELPERS ================= */
+  function val(id){ return document.getElementById(id).value.trim(); }
+  function radio(name){
+    var els = document.getElementsByName(name);
+    for(var i = 0; i < els.length; i++) if(els[i].checked) return els[i].value;
+    return "";
+  }
+  function checks(name){
+    var els = document.getElementsByName(name), out = [];
+    for(var i = 0; i < els.length; i++) if(els[i].checked) out.push(els[i].value);
+    return out.join("; ");
+  }
+  function checksArr(name){
+    var els = document.getElementsByName(name), out = [];
+    for(var i = 0; i < els.length; i++) if(els[i].checked) out.push(els[i].value);
+    return out;
+  }
+  function showErr(id, show){
+    var el = document.getElementById("err-" + id);
+    if(el) el.style.display = show ? "block" : "none";
+  }
+  function num(id){ var v = parseFloat(val(id)); return isNaN(v) ? null : v; }
+  function mult(id, k){ var v = num(id); return v === null ? null : Math.round(v * k); }
+  function rbase(){
+    var h = num("hrsPower");
+    if(h === null) return null;
+    var r = Math.max(0, Math.min(1, h / 24));
+    if(radio("night") === "Rarely or never") r = Math.min(r, 0.4);
+    return Math.round(r * 100) / 100;
+  }
+
+  /* ================= FINISH: PDF report + data file ================= */
+
+  // --- HEAL default parameters (conservative; full methodology available from SHIELD) ---
+  var HEAL = {
+    R_NEW: 0.95,        // reliability of solar + storage during service-critical hours
+    PERSISTENCE: 0.90,  // discount for operational risk over 20 years
+    BUFFER: 0.10,       // share held back in a buffer pool against underperformance
+    V_TIERS: { A: 0.60, B: 0.80 },  // verification factor by data quality
+    P1: { risk: 0.003, eff: 0.20, attr: 0.5, daly: 25 },  // maternal, per facility delivery
+    P2: { risk: 0.025, eff: 0.20, attr: 0.5, daly: 30 },  // newborn, per facility delivery
+    P3: { wastage: 0.15, avoidable: 0.80, dosesPerFIC: 10, deathsPer1000FIC: 5, daly: 30 },
+    P4: { nightShare: 0.30, cfr: 0.05, eff: 0.10, attr: 0.5, daly: 25 }
+  };
+
+  // --- Kenya cost-of-electricity defaults (edit as prices move) ---
+  var KENYA = {
+    GRID_KSH_PER_KWH: 24,        // effective all-in commercial rate incl. fuel charge, forex, levies (base CI tariff ~13.74 + pass-throughs)
+    DIESEL_KSH_PER_LITRE: 222.86, // EPRA Nairobi pump price, Jul-Aug 2026 cycle
+    GEN_KWH_PER_LITRE: 3.0,      // typical small genset output per litre
+    GEN_OM_FACTOR: 1.15,         // +15% for genset servicing, oil, parts
+    SOLAR_CAPEX_KSH_PER_KWP: 195000, // installed solar + storage (~USD 1,500/kWp at ~130 KSh/USD)
+    SOLAR_OM_PCT_PER_YR: 0.015,  // annual O&M as share of capex
+    BATTERY_REPLACE_KSH_PER_KWP: 46000, // battery bank replacement around year 15
+    GRID_EF: 0.30,               // tCO2e/MWh, Kenyan grid (largely geothermal/hydro)
+    DIESEL_EF: 0.80,             // tCO2e/MWh, diesel generation incl. upstream
+    MAX_OFFSET: 0.55,            // max share of consumption solar+storage can realistically serve
+    LEASE_BILL_SHARE: 0.90,      // lease rule: lease + remaining bill = 90% of prior bill
+    REINVEST_REALISATION: 0.5    // share of freed savings assumed to reach front-line care
+  };
+
+  // indicative cost of producing one healthy life-year, KSh — conservative defaults
+  var REINVEST = {
+    medicines:   { label: "Ending stock-outs of essential medicines", ksh: 13000 },
+    staff:       { label: "Additional nurses and midwives",           ksh: 19500 },
+    oxygen:      { label: "Reliable medical oxygen supply",           ksh: 13000 },
+    referral:    { label: "Emergency referral / ambulance fund",      ksh: 19500 },
+    specialist:  { label: "Specialist drugs fund (cancer, NCDs)",     ksh: 65000 },
+    maintenance: { label: "Equipment repair and maintenance",         ksh: 26000 }
+  };
+
+  function parseMoney(s){
+    var d = (s || "").replace(/[^0-9.]/g, "");
+    var v = parseFloat(d);
+    return (isNaN(v) || v <= 0) ? null : v;
+  }
+
+  // carbon factor from what the facility says solar would displace
+  function mixEF(){
+    var src = checks("src");
+    var hasGrid = src.indexOf("National grid") !== -1;
+    var hasGen = src.indexOf("generator") !== -1;
+    var gs, ds;
+    if(hasGrid && hasGen){ gs = 0.70; ds = 0.20; }
+    else if(hasGrid){ gs = 0.85; ds = 0; }
+    else if(hasGen){ gs = 0; ds = 0.70; }
+    else { gs = 0; ds = 0.20; }
+    return { gs: gs, ds: ds, ef: gs * KENYA.GRID_EF + ds * KENYA.DIESEL_EF };
+  }
+
+  function computeFinance(solar){
+    var B = parseMoney(val("billAmt"));            // monthly bill, KSh
+    var consM = num("kwhMonth");
+    var consYr = consM ? consM * 12 : (B ? B / KENYA.GRID_KSH_PER_KWH * 12 : null);
+    var roofKwp = solar.hasRoofs ? solar.kwp : null;
+    var capKwp = consYr ? consYr * KENYA.MAX_OFFSET / YIELD_KWH_PER_KWP : null;
+    var recKwp, sizedBy;
+    if(roofKwp !== null && capKwp !== null){
+      recKwp = Math.min(roofKwp, capKwp);
+      sizedBy = capKwp < roofKwp ? "load" : "roof";
+    } else if(capKwp !== null){ recKwp = capKwp; sizedBy = "load"; }
+    else if(roofKwp !== null){ recKwp = roofKwp; sizedBy = "roof"; }
+    else return null;
+    var genYrKwh = recKwp * YIELD_KWH_PER_KWP;
+    var genYrMwh = genYrKwh / 1000;
+    var gen20Mwh = genYrMwh * 20 * 0.95;
+    var offset = consYr ? Math.min(KENYA.MAX_OFFSET, genYrKwh / consYr) : null;
+    var capex = recKwp * KENYA.SOLAR_CAPEX_KSH_PER_KWP;
+    var omYr = capex * KENYA.SOLAR_OM_PCT_PER_YR;
+    var mix = mixEF();
+    var f = { recKwp: recKwp, sizedBy: sizedBy, roofKwp: roofKwp, capKwp: capKwp,
+      consYr: consYr, billMonthly: B, offset: offset, capex: capex, omYr: omYr,
+      genYrMwh: genYrMwh, gen20Mwh: gen20Mwh, mix: mix, co2Yr: genYrMwh * mix.ef,
+      lease: null, tenorMonths: null, saveLeaseYr: null, savePostYr: null, avgSaveYr: null,
+      reinvest: null };
+    if(B && offset && offset > 0.12){
+      f.lease = B * (offset - (1 - KENYA.LEASE_BILL_SHARE));
+      f.tenorMonths = capex / f.lease;
+      f.saveLeaseYr = (1 - KENYA.LEASE_BILL_SHARE) * B * 12;
+      f.savePostYr = offset * B * 12 - omYr;
+      var leaseYears = Math.min(20, f.tenorMonths / 12);
+      f.avgSaveYr = (leaseYears * f.saveLeaseYr + (20 - leaseYears) * f.savePostYr) / 20;
+    }
+    if(f.avgSaveYr && f.avgSaveYr > 0){
+      var chosen = checksArr("reinvest");
+      if(!chosen.length) chosen = ["medicines", "maintenance"];
+      var share = 1 / chosen.length;
+      var effective = f.avgSaveYr * KENYA.REINVEST_REALISATION;
+      var items = chosen.map(function(k){
+        var o = REINVEST[k];
+        return { key: k, label: o.label, share: share,
+          fundsYr: f.avgSaveYr * share, dalysYr: effective * share / o.ksh };
+      });
+      f.reinvest = { items: items, fundsYr: f.avgSaveYr,
+        totalDalysYr: items.reduce(function(s, i){ return s + i.dalysYr; }, 0) };
+    }
+    return f;
+  }
+
+
+  function money(x){
+    if(x >= 1e6) x = Math.round(x / 10000) * 10000;
+    else if(x >= 1e4) x = Math.round(x / 100) * 100;
+    return fmt(x, 0);
+  }
+
+  function computeCosts(finance){
+    if(!finance || finance.recKwp <= 0 || finance.gen20Mwh <= 0) return null;
+    var kwh20 = finance.gen20Mwh * 1000;
+    var genPerKwh = KENYA.DIESEL_KSH_PER_LITRE / KENYA.GEN_KWH_PER_LITRE * KENYA.GEN_OM_FACTOR;
+    var solarTotal = finance.capex * (1 + 20 * KENYA.SOLAR_OM_PCT_PER_YR)
+      + finance.recKwp * KENYA.BATTERY_REPLACE_KSH_PER_KWP;
+    var solarPerKwh = solarTotal / kwh20;
+    var gridTotal = kwh20 * KENYA.GRID_KSH_PER_KWH;
+    var genTotal = kwh20 * genPerKwh;
+    return { kwh20: kwh20, solarPerKwh: solarPerKwh, solarTotal: solarTotal,
+      gridPerKwh: KENYA.GRID_KSH_PER_KWH, gridTotal: gridTotal,
+      genPerKwh: genPerKwh, genTotal: genTotal,
+      saveVsGrid: gridTotal - solarTotal, saveVsGen: genTotal - solarTotal };
+  }
+
+  function computeSolar(){
+    var area = totalRoofArea();
+    return {
+      hasRoofs: roofs.length > 0, nRoofs: roofs.length,
+      area_m2: area, usable_m2: Math.round(area * USABLE_FRACTION),
+      kwp: estKwp(), mwh_yr: estMwh(), co2_yr: estMwh() * TCO2_PER_MWH,
+      mwh_20yr: estMwh() * 20 * 0.95
+    };
+  }
+
+  function computeHealth(finance){
+    var rb = rbase(), rbAssumed = false;
+    if(rb === null){ rb = 0.5; rbAssumed = true; }
+    var U = Math.max(0, HEAL.R_NEW - rb);
+    var dels  = mult("deliveries", 12) || 0;
+    var adm   = mult("admissions", 12) || 0;
+    var kids  = mult("vaxKids", 12) || 0;
+    var doses = kids * HEAL.P3.dosesPerFIC;
+    var hasReinvest = finance && finance.reinvest && finance.reinvest.totalDalysYr > 0;
+    if(!dels && !adm && !doses && !hasReinvest) return null;
+    var rows = [];
+    function path(name, vol, riskf, eff, attr, daly){
+      var deaths = vol * riskf * eff * attr * U;
+      rows.push({ name: name, vol: vol, deaths: deaths, dalys: deaths * daly });
+    }
+    if(dels){
+      path("Safe delivery (maternal)", dels, HEAL.P1.risk, HEAL.P1.eff, HEAL.P1.attr, HEAL.P1.daly);
+      path("Newborn care at delivery", dels, HEAL.P2.risk, HEAL.P2.eff, HEAL.P2.attr, HEAL.P2.daly);
+    }
+    if(doses) path("Vaccine cold chain", doses, HEAL.P3.wastage * HEAL.P3.avoidable,
+      HEAL.P3.deathsPer1000FIC / 1000 / HEAL.P3.dosesPerFIC, 1, HEAL.P3.daly);
+    if(adm) path("Emergency & night-time care", adm, HEAL.P4.nightShare * HEAL.P4.cfr,
+      HEAL.P4.eff, HEAL.P4.attr, HEAL.P4.daly);
+    if(hasReinvest){
+      rows.push({ name: "Savings reinvested in care (P5)",
+        volLabel: "KSh " + money(finance.reinvest.fundsYr) + " / yr",
+        deaths: finance.reinvest.totalDalysYr / 30,
+        dalys: finance.reinvest.totalDalysYr });
+    }
+    var annual = 0;
+    rows.forEach(function(r){ annual += r.dalys; });
+    var tier = radio("svcConf").indexOf("registers") !== -1 ? "B" : "A";
+    var V = HEAL.V_TIERS[tier];
+    var gross20 = annual * 20 * HEAL.PERSISTENCE;
+    var creditable = gross20 * V * (1 - HEAL.BUFFER);
+    return { rb: rb, rbAssumed: rbAssumed, U: U, rows: rows, annual: annual,
+      tier: tier, V: V, gross20: gross20, creditable: creditable };
+  }
+
+  function fmt(x, d){
+    if(x === null || x === undefined || isNaN(x)) return "–";
+    return Number(x).toLocaleString("en-GB", { maximumFractionDigits: (d === undefined ? 1 : d) });
+  }
+
+  // ---------------- PDF report ----------------
+  var TEAL = [15, 113, 115], INK = [39, 41, 50], GOLD = [200, 145, 47], MINT = [220, 233, 231];
+
+  function buildPdf(solar, health, finance, pin){
+    var jsPDF = window.jspdf && window.jspdf.jsPDF;
+    if(!jsPDF) return null;
+    var doc = new jsPDF({ unit: "mm", format: "a4" });
+    if(typeof doc.autoTable !== "function") return null;
+    var W = 210, M = 18, y = 0;
+
+    function band(title, sub){
+      doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
+      doc.rect(0, 0, W, 26, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(15);
+      doc.text("SHIELD", M, 11);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      doc.text(title, M, 19);
+      if(sub){ doc.setFontSize(9); doc.text(sub, W - M, 19, { align: "right" }); }
+      y = 36;
+    }
+    function h2(t){
+      need(14);
+      doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+      doc.text(t, M, y); y += 7;
+    }
+    function para(t, opts){
+      opts = opts || {};
+      doc.setTextColor(INK[0], INK[1], INK[2]);
+      doc.setFont("helvetica", opts.italic ? "italic" : "normal");
+      doc.setFontSize(opts.size || 10);
+      var lines = doc.splitTextToSize(t, W - 2 * M);
+      need(lines.length * 4.6 + 3);
+      doc.text(lines, M, y);
+      y += lines.length * 4.6 + 3;
+    }
+    function need(h){
+      if(y + h > 280){ doc.addPage(); band(reportTitle, facLine); }
+    }
+    function table(head, body, opts){
+      doc.autoTable(Object.assign({
+        startY: y, margin: { left: M, right: M },
+        head: [head], body: body,
+        styles: { font: "helvetica", fontSize: 9, textColor: INK, cellPadding: 2 },
+        headStyles: { fillColor: TEAL, textColor: [255,255,255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [244, 248, 247] },
+        theme: "grid"
+      }, opts || {}));
+      y = doc.lastAutoTable.finalY + 8;
+    }
+
+    var reportTitle = "Hospital Site Assessment Report";
+    var facLine = val("facName") + (val("country") ? " · " + val("country") : "");
+    var dateStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+    // ---- Page 1: cover & at a glance ----
+    band(reportTitle, dateStr);
+    doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(20);
+    var titleLines = doc.splitTextToSize(val("facName") || "Health facility", W - 2 * M);
+    doc.text(titleLines, M, y + 4); y += titleLines.length * 8 + 6;
+    doc.setTextColor(INK[0], INK[1], INK[2]);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5);
+    doc.text([val("facType"), [val("district"), val("country")].filter(Boolean).join(", "),
+      "Prepared with " + (val("contactName") || "the facility team") +
+      (val("contactRole") ? " (" + val("contactRole") + ")" : "")].filter(Boolean), M, y);
+    y += 18;
+
+    para("This report combines the facility questionnaire (Stage 1) with the satellite roof capture (Stage 2) completed on " + dateStr +
+      ". It gives a first, deliberately conservative estimate of the solar system this site could carry and the health impact reliable power could deliver. " +
+      "All figures are indicative: SHIELD's engineers confirm the final design after reviewing electricity bills and visiting the site.");
+
+    h2("At a glance");
+    var glance = [
+      ["Roof area outlined", solar.hasRoofs ? fmt(solar.area_m2, 0) + " m² (" + solar.nRoofs + " roof" + (solar.nRoofs > 1 ? "s" : "") + ")" : "not captured"],
+      ["Roof solar potential", solar.hasRoofs ? fmt(solar.kwp, 0) + " kWp" : "–"],
+      ["Recommended system size", finance ? fmt(finance.recKwp, 0) + " kWp (" + (finance.sizedBy === "load" ? "sized to your consumption" : "sized by roof space") + ")" : "–"],
+      ["Indicative generation", finance ? fmt(finance.genYrMwh, 1) + " MWh per year" : "–"],
+      ["Indicative CO2e avoided", finance ? fmt(finance.co2Yr, 1) + " tonnes per year" : "–"],
+      ["Indicative SHIELD lease", finance && finance.lease ? "KSh " + money(finance.lease) + " per month for ~" + fmt(finance.tenorMonths, 0) + " months" : "needs your bill amount"],
+      ["Average annual saving (20-yr)", finance && finance.avgSaveYr ? "KSh " + money(finance.avgSaveYr) : "–"]
+    ];
+    if(health){
+      glance.push(["Baseline power reliability", fmt(health.rb * 100, 0) + "% of critical hours" + (health.rbAssumed ? " (assumed)" : "")]);
+      glance.push(["Indicative health impact", fmt(health.annual, 1) + " healthy life-years per year"]);
+      glance.push(["Indicative 20-year creditable impact", fmt(health.creditable, 0) + " healthy life-years"]);
+      if(solar.hasRoofs && solar.mwh_20yr > 0){
+        glance.push(["Indicative Health-REC intensity", fmt(health.creditable / solar.mwh_20yr, 2) + " healthy life-years per MWh"]);
+      }
+    }
+    table(["Result", "Value"], glance, { columnStyles: { 0: { cellWidth: 90 } } });
+
+    // ---- Page 2: the facility as reported ----
+    doc.addPage(); band(reportTitle, facLine);
+    h2("1. Your facility, as you described it");
+    table(["Question", "Answer"], [
+      ["Facility type / beds", val("facType") + (val("beds") ? " · " + val("beds") + " beds" : "")],
+      ["Catchment population", (val("catchment") ? fmt(num("catchment"), 0) + " people" : "not given") + " (" + radio("catchConf").toLowerCase() + ")"],
+      ["Deliveries", (val("deliveries") || "–") + " per month"],
+      ["Caesarean sections", (val("csections") || "–") + " per month"],
+      ["Outpatients", (val("opdDay") || "–") + " per day"],
+      ["Admissions", (val("admissions") || "–") + " per month"],
+      ["Children vaccinated", (val("vaxKids") || "–") + " per month · " + radio("vax").toLowerCase()],
+      ["Source of service numbers", radio("svcConf")],
+      ["Power sources", checks("src") || "not given"],
+      ["Hours of power per day", val("hrsPower") || "not given"],
+      ["Power at night", radio("night")],
+      ["Care interrupted by outages", radio("interrupt")],
+      ["Monthly electricity bill", val("billAmt") || "–"],
+      ["Monthly generator fuel", val("fuelAmt") || "–"],
+      ["Generator", val("genSize") || "–"],
+      ["Power-dependent equipment", checks("eq") || "not given"],
+      ["Bills provided", chosenFiles.length ? chosenFiles.map(function(f){ return f.name; }).join(", ") : "none attached yet"]
+    ], { columnStyles: { 0: { cellWidth: 70 } } });
+    if(val("outageImpact")){
+      h2("In your own words");
+      para('"' + val("outageImpact") + '"', { italic: true });
+    }
+
+    // ---- Page 3: solar ----
+    doc.addPage(); band(reportTitle, facLine);
+    h2("2. Solar potential from your roof capture");
+    if(solar.hasRoofs){
+      para("Facility location: " + (pin ? pin.lat.toFixed(6) + ", " + pin.lng.toFixed(6) : (val("gps") || "not pinned")) +
+        " (from the satellite map). The roof outlines you drew are included as map coordinates in the accompanying data file.");
+      var roofRows = roofs.map(function(r, i){ return ["Roof " + (i + 1), fmt(r.area_m2, 0) + " m²"]; });
+      roofRows.push(["Total", fmt(solar.area_m2, 0) + " m²"]);
+      table(["Roof", "Outlined area"], roofRows, { columnStyles: { 0: { cellWidth: 70 } } });
+      h2("How the solar numbers are calculated");
+      para("Usable area. Not every square metre of roof can carry panels: edges, vents, tanks, shading and walkways take space. We assume " +
+        (USABLE_FRACTION * 100) + "% of what you outlined is usable: " + fmt(solar.area_m2, 0) + " m² × " + (USABLE_FRACTION * 100) + "% = " +
+        fmt(solar.usable_m2, 0) + " m².");
+      para("System size. A modern panel needs about " + M2_PER_KWP + " m² of roof per kilowatt-peak (kWp) once spacing is included: " +
+        fmt(solar.usable_m2, 0) + " m² ÷ " + M2_PER_KWP + " = about " + fmt(solar.kwp, 0) + " kWp.");
+      para("Annual generation. Across most of Africa a well-installed system yields at least " + fmt(YIELD_KWH_PER_KWP, 0) +
+        " kWh per kWp per year (a deliberately cautious figure; many sites do better): " + fmt(solar.kwp, 0) + " kWp × " +
+        fmt(YIELD_KWH_PER_KWP, 0) + " kWh = about " + fmt(solar.mwh_yr, 1) + " MWh per year.");
+      if(finance){
+        para("Recommended size. Your roofs could carry about " + fmt(solar.kwp, 0) + " kWp, but a system should be sized to your electricity use, not just your roof. " +
+          (finance.consYr ? "From your " + (num("kwhMonth") ? "reported consumption" : "bill") + " (about " + fmt(finance.consYr, 0) + " kWh per year), solar with storage can realistically serve up to " + fmt(KENYA.MAX_OFFSET * 100, 0) + "% of your load, which caps the system at about " + fmt(finance.capKwp, 0) + " kWp. " : "") +
+          "We therefore recommend about " + fmt(finance.recKwp, 0) + " kWp (" + (finance.sizedBy === "load" ? "your consumption, not your roof, is the limit" : "your roof is the limit") + "), generating about " + fmt(finance.genYrMwh, 1) + " MWh per year.");
+        para("Carbon avoided. What matters is what each solar unit replaces. From your power sources, we assume " + fmt(finance.mix.gs * 100, 0) + "% of generation displaces grid electricity (Kenya's grid is largely geothermal and hydro, so only " + KENYA.GRID_EF + " tCO2e per MWh) and " + fmt(finance.mix.ds * 100, 0) + "% displaces diesel (" + KENYA.DIESEL_EF + " tCO2e per MWh). That gives about " + fmt(finance.co2Yr, 1) + " tonnes of CO2e avoided per year — a deliberately honest figure rather than a flattering one.");
+      }
+      para("SHIELD's engineers refine every one of these numbers using your bills (actual consumption), a structural survey of the roofs, and site-specific irradiance data.", { italic: true });
+      var costs = computeCosts(finance);
+      if(costs){
+        need(110);
+        h2("What this electricity would cost over 20 years (Kenya prices)");
+        para("The system above would generate about " + fmt(costs.kwh20, 0) + " kWh over 20 years. Three ways of paying for that electricity:");
+        table(["Option", "Cost per kWh", "20-year cost", "Basis"], [
+          ["Own this solar system", "KSh " + fmt(costs.solarPerKwh, 1), "KSh " + money(costs.solarTotal),
+           "Installation (KSh " + fmt(KENYA.SOLAR_CAPEX_KSH_PER_KWP, 0) + "/kWp incl. storage) + " + (KENYA.SOLAR_OM_PCT_PER_YR * 100) + "%/yr maintenance + battery replacement at year 15"],
+          ["Diesel generator", "KSh " + fmt(costs.genPerKwh, 1), "KSh " + money(costs.genTotal),
+           "Diesel at KSh " + fmt(KENYA.DIESEL_KSH_PER_LITRE, 0) + "/litre, " + KENYA.GEN_KWH_PER_LITRE + " kWh/litre, +15% servicing"],
+          ["Grid electricity", "KSh " + fmt(costs.gridPerKwh, 1), "KSh " + money(costs.gridTotal),
+           "Effective commercial rate incl. fuel charge and levies"]
+        ], { columnStyles: { 0: { cellWidth: 42 }, 1: { cellWidth: 28 }, 2: { cellWidth: 36 } } });
+        para("Against the grid, owning this system would save roughly KSh " + money(costs.saveVsGrid) +
+          " over 20 years; against a diesel generator, roughly KSh " + money(costs.saveVsGen) +
+          ". These comparisons hold today's prices flat for 20 years, which is conservative: grid tariffs and diesel prices have historically risen, while the solar system's costs are fixed on day one. Savings of this kind are what SHIELD's financing models turn into affordable monthly payments — and what facilities like Meru Hospital redirect into patient care.");
+        para("Prices used: EPRA Nairobi diesel price for the July-August 2026 cycle and an effective all-in commercial grid rate; both are editable assumptions pending your actual bills.", { italic: true, size: 8.5 });
+      }
+
+    }else{
+      para("No roofs were outlined on the satellite map, so no solar sizing is included here. SHIELD will map the site with you by phone, or during the site visit. The rest of this report is unaffected.");
+    }
+
+    // ---- Financing & savings page ----
+    doc.addPage(); band(reportTitle, facLine);
+    h2("3. SHIELD financing and what you would save");
+    para("SHIELD funds the installation by selling Health Renewable Energy Certificates (H:RECs) forward to a corporate anchor partner — one certificate per MWh the system will generate, verified after the fact by metering. The hospital therefore pays no capital upfront; it pays a monthly lease, and owns the system outright when the lease completes.");
+    if(finance && finance.lease){
+      table(["Item", "Value", "How it is calculated"], [
+        ["System cost", "KSh " + money(finance.capex), fmt(finance.recKwp, 0) + " kWp × KSh " + fmt(KENYA.SOLAR_CAPEX_KSH_PER_KWP, 0) + "/kWp"],
+        ["Your current monthly bill", "KSh " + money(finance.billMonthly), "As reported (confirmed from your bills)"],
+        ["Solar share of your load", fmt(finance.offset * 100, 0) + "%", "System generation ÷ your annual consumption, capped at " + fmt(KENYA.MAX_OFFSET * 100, 0) + "%"],
+        ["Monthly lease", "KSh " + money(finance.lease), "Lease + remaining grid bill = " + (KENYA.LEASE_BILL_SHARE * 100) + "% of your prior bill — you save from month one"],
+        ["Lease period", "~" + fmt(finance.tenorMonths, 0) + " months (" + fmt(finance.tenorMonths / 12, 1) + " years)", "System cost ÷ monthly lease, at 0% interest"],
+        ["Saving during the lease", "KSh " + money(finance.saveLeaseYr) + " / year", (100 - KENYA.LEASE_BILL_SHARE * 100) + "% of your prior bill"],
+        ["Saving after the lease", "KSh " + money(finance.savePostYr) + " / year", "Solar share of the bill, minus maintenance"],
+        ["Average saving over 20 years", "KSh " + money(finance.avgSaveYr) + " / year", "Lease-period and post-lease years combined"]
+      ], { columnStyles: { 0: { cellWidth: 52 }, 1: { cellWidth: 52 } } });
+    }else{
+      para("A lease estimate needs your monthly bill amount (and ideally consumption in kWh). Provide these — or simply attach your bills — and SHIELD will complete this section.");
+    }
+    if(finance && finance.reinvest){
+      need(90);
+      h2("What those savings could do for patients");
+      para("Money freed from the electricity bill is money for care. Based on the priorities you ticked, and conservatively assuming only half of the savings reach front-line services, the average annual saving of KSh " + money(finance.reinvest.fundsYr) + " could deliver:");
+      var rr = finance.reinvest.items.map(function(it){
+        return [it.label, fmt(it.share * 100, 0) + "%", "KSh " + money(it.fundsYr) + " / yr", fmt(it.dalysYr, 1) + " healthy life-years / yr"];
+      });
+      rr.push(["Total", "", "KSh " + money(finance.reinvest.fundsYr) + " / yr", fmt(finance.reinvest.totalDalysYr, 1) + " healthy life-years / yr"]);
+      table(["Priority (your choice)", "Share", "Funds", "Indicative impact"], rr, { columnStyles: { 0: { cellWidth: 62 } } });
+      para("Each figure uses a conservative cost per healthy life-year for that activity (for example, essential-medicine stock-outs and oxygen are among the cheapest ways any hospital can save life-years; specialist drug funds are worthwhile but costlier per year gained). This mirrors what happened at Meru Hospital, where solar savings created a KES 10 million cancer drugs fund and support a high-dependency unit.", { italic: true });
+    }
+
+    // ---- Page 4: health ----
+    doc.addPage(); band(reportTitle, facLine);
+    h2("4. Health impact of reliable power (HEAL method)");
+    if(health){
+      para("Only the improvement counts. From your answers, this facility currently has usable power in about " + fmt(health.rb * 100, 0) +
+        "% of service-critical hours" + (health.rbAssumed ? " (no hours were given, so 50% is assumed until bills are reviewed)" : "") +
+        ". Solar with storage delivers about " + (HEAL.R_NEW * 100) + "%. The health estimate is scaled by the difference — the reliability uplift of " +
+        fmt(health.U * 100, 0) + " percentage points. A facility that already had good power would earn almost nothing here; that honesty is deliberate.");
+      para("Pathways P1–P4 use one formula: patients × baseline risk × what fully reliable power changes × power's fair share of the credit × the reliability uplift. Pathway P5 works through money rather than electrons: the bill savings estimated in Section 3, directed to the priorities you chose, at a conservative cost per healthy life-year. " +
+        "Deaths averted are converted to healthy life-years using standard weights. The effect sizes are conservative defaults from the literature on health-facility electrification; the full parameter set and methodology paper are available from SHIELD.");
+      var hr = health.rows.map(function(r){
+        return [r.name, r.volLabel || (fmt(r.vol, 0) + " / yr"), fmt(r.deaths, 2), fmt(r.dalys, 1)];
+      });
+      hr.push(["Total (annual, indicative)", "", fmt(health.rows.reduce(function(s, r){ return s + r.deaths; }, 0), 2), fmt(health.annual, 1)]);
+      table(["Pathway", "Volume", "Deaths averted / yr", "Healthy life-years / yr"], hr);
+      h2("From annual impact to a 20-year claim");
+      table(["Step", "Factor", "Result (healthy life-years)"], [
+        ["Annual impact × 20 years", "× 20", fmt(health.annual * 20, 0)],
+        ["Operational persistence (systems are not perfect for 20 years)", "× " + HEAL.PERSISTENCE, fmt(health.gross20, 0)],
+        ["Data verification (Tier " + health.tier + ": " + (health.tier === "B" ? "service volumes from registers" : "estimates from memory") + ")", "× " + health.V, fmt(health.gross20 * health.V, 0)],
+        ["Buffer pool held back against underperformance", "× " + (1 - HEAL.BUFFER), fmt(health.creditable, 0)]
+      ], { columnStyles: { 0: { cellWidth: 100 } } });
+      para("We under-claim on purpose: each step above removes impact rather than adding it, so the certified figure should always be below the true benefit. " +
+        (health.tier === "A" ? "Because these volumes are estimates, a larger discount applies — providing register data later raises the creditable figure. " : "") +
+        (finance && finance.gen20Mwh > 0 ? "Spread across the roughly " + fmt(finance.gen20Mwh, 0) +
+        " MWh this system would generate in 20 years, each MWh carries about " + fmt(health.creditable / finance.gen20Mwh, 2) +
+        " healthy life-years. These are the attributes of the H:RECs sold forward to the anchor partner that finances your system: the partner pays upfront, and each certificate's impact is confirmed as the metered generation and monitored health data come in, with an annual true-up." : ""));
+    }else{
+      para("No service volumes (deliveries, admissions or vaccinations) were provided, so no health estimate is included. Even rough monthly figures would allow one — SHIELD will follow up.");
+    }
+
+    // ---- Page 5: next steps ----
+    doc.addPage(); band(reportTitle, facLine);
+    h2("5. What happens next");
+    para("1. Send this report, the data file and your electricity bills to SHIELD (" + SHIELD_EMAIL + ").");
+    para("2. SHIELD's engineers review your bills and roof capture, confirm the system design, and prepare a full proposal with the lease terms modelled in Section 3.");
+    para("3. A site visit confirms roof condition, wiring and equipment before installation.");
+    para("4. SHIELD sells the system's H:RECs forward to a corporate anchor partner — that upfront payment is what funds your installation with no capital from the hospital. After installation the system is metered and monitored, and each certificate's carbon and health attributes are confirmed against real data with an annual true-up.");
+    y += 4;
+    doc.setDrawColor(GOLD[0], GOLD[1], GOLD[2]);
+    doc.setFillColor(MINT[0], MINT[1], MINT[2]);
+    doc.rect(M, y, W - 2 * M, 22, "F");
+    doc.setTextColor(INK[0], INK[1], INK[2]);
+    doc.setFont("helvetica", "italic"); doc.setFontSize(9.5);
+    doc.text(doc.splitTextToSize("Every figure in this report is a conservative first estimate generated from the information you provided, before engineering review. It is not a quotation or a guarantee.", W - 2 * M - 8), M + 4, y + 6);
+
+    // page footers
+    var pages = doc.getNumberOfPages();
+    for(var i = 1; i <= pages; i++){
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.setTextColor(120, 130, 128);
+      doc.text("SHIELD · Solar Hospital Innovation for Energy Leasing Demonstrator · " + dateStr, M, 291);
+      doc.text("Page " + i + " of " + pages, W - M, 291, { align: "right" });
+    }
+    return doc;
+  }
+
+  function downloadBlob(blob, fname){
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  function renderResults(){
+    var solar = computeSolar();
+    var finance = computeFinance(solar);
+    var health = computeHealth(finance);
+    var el = document.getElementById("results");
+    function card(n, l){ return '<div class="rescard"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>'; }
+    var h = "";
+
+    h += '<h2 style="color:var(--teal); font-size:22px; margin:18px 0 4px;">Your solar system</h2>';
+    h += '<div class="resgrid">';
+    h += card(finance ? fmt(finance.recKwp, 0) + " kWp" : "–", finance ? ("recommended system (" + (finance.sizedBy === "load" ? "sized to your consumption" : "sized by your roofs") + ")") : "add roofs or a bill to size a system");
+    h += card(finance ? fmt(finance.genYrMwh, 1) + " MWh" : "–", "clean electricity per year");
+    h += card(finance ? fmt(finance.co2Yr, 1) + " t" : "–", "CO2e avoided per year");
+    h += '</div>';
+
+    if(finance && finance.lease){
+      h += '<h2 style="color:var(--teal); font-size:22px; margin:18px 0 4px;">Money: the SHIELD lease</h2>';
+      h += '<div class="resgrid">';
+      h += card("KSh " + money(finance.lease), "monthly lease — no upfront capital, 0% interest");
+      h += card("~" + fmt(finance.tenorMonths / 12, 1) + " yrs", "until the hospital owns the system outright");
+      h += card("KSh " + money(finance.avgSaveYr), "average saving per year over 20 years");
+      h += '</div>';
+      h += '<p class="sub">Rule of thumb: your lease plus your remaining grid bill together equal 90% of your old bill — so you save from month one, and 40–50% of the bill after the lease. The system is funded by Health Renewable Energy Certificates sold forward to a corporate partner.</p>';
+    }
+
+    if(finance && finance.reinvest){
+      h += '<h2 style="color:var(--teal); font-size:22px; margin:18px 0 4px;">What those savings could do — your priorities</h2>';
+      h += '<table class="restable"><tr><th>Priority</th><th>Funds per year</th><th>Indicative impact</th></tr>';
+      finance.reinvest.items.forEach(function(it){
+        h += '<tr><td>' + it.label + '</td><td>KSh ' + money(it.fundsYr) + '</td><td>' + fmt(it.dalysYr, 1) + ' healthy life-years / yr</td></tr>';
+      });
+      h += '<tr><td><strong>Total</strong></td><td><strong>KSh ' + money(finance.reinvest.fundsYr) + '</strong></td><td><strong>' + fmt(finance.reinvest.totalDalysYr, 1) + ' healthy life-years / yr</strong></td></tr></table>';
+    }
+
+    if(health){
+      h += '<h2 style="color:var(--teal); font-size:22px; margin:18px 0 4px;">Health impact of reliable power</h2>';
+      h += '<table class="restable"><tr><th>Pathway</th><th>Healthy life-years / yr</th></tr>';
+      health.rows.forEach(function(r){
+        h += '<tr><td>' + r.name + '</td><td>' + fmt(r.dalys, 1) + '</td></tr>';
+      });
+      h += '<tr><td><strong>Total (indicative)</strong></td><td><strong>' + fmt(health.annual, 1) + '</strong></td></tr></table>';
+      h += '<p class="sub">Over 20 years, after deliberately conservative discounts for persistence, data quality and a buffer pool, that is about <strong>' +
+        fmt(health.creditable, 0) + ' creditable healthy life-years</strong>' +
+        (finance && finance.gen20Mwh > 0 ? ' — about ' + fmt(health.creditable / finance.gen20Mwh, 2) + ' per MWh, the health attribute of each forward-sold H:REC.' : '.') + '</p>';
+    }
+
+    h += '<p class="sub" style="background:var(--mint-light); border-radius:8px; padding:12px 16px;">Every figure here is a conservative first estimate from the information you provided, before engineering review. The PDF report explains each calculation step by step.</p>';
+    el.innerHTML = h;
+  }
+
+  document.getElementById("downloadBtn").addEventListener("click", function(){
+    var now = new Date();
+    var pin = pinLatLng;
+    var solar = computeSolar();
+    var finance = computeFinance(solar);
+    var health = computeHealth(finance);
+    var base = "SHIELD_site_assessment_" + (val("facName") || "facility").replace(/[^a-z0-9]+/gi, "_");
+
+    // 1. data file (for SHIELD analysts / HEAL calculator import)
+    var data = {
+      stage1_questionnaire: {
+        facility: { name: val("facName"), type: val("facType"), beds: num("beds"),
+          country: val("country"), district: val("district") },
+        catchment: { population: num("catchment"), confidence: radio("catchConf") },
+        services_annualised: {
+          deliveries_per_year: mult("deliveries", 12),
+          csections_per_year: mult("csections", 12),
+          opd_visits_per_year: mult("opdDay", 365),
+          admissions_per_year: mult("admissions", 12),
+          children_vaccinated_per_year: mult("vaxKids", 12),
+          vaccination_mode: radio("vax"), data_source: radio("svcConf")
+        },
+        energy_baseline: {
+          sources: checks("src"), hours_power_per_day: num("hrsPower"),
+          r_base_estimate: rbase(), night_availability: radio("night"),
+          care_interrupted: radio("interrupt"), monthly_bill: val("billAmt"),
+          monthly_fuel: val("fuelAmt"), generator: val("genSize")
+        },
+        equipment: checks("eq"), outage_impact: val("outageImpact"),
+        bill_files: chosenFiles.map(function(f){ return f.name; }),
+        contact: { name: val("contactName"), role: val("contactRole"),
+          email: val("contactEmail"), phone: val("contactPhone") },
+        notes: val("notes")
+      },
+      stage2_roof_capture: {
+        pin: pin ? { lat: pin.lat, lng: pin.lng } : null, gps_text: val("gps"),
+        imagery_provider: api ? "google" : null,
+        roofs_geojson: {
+          type: "FeatureCollection",
+          features: roofs.map(function(r, i){
+            var ring = r.latlngs.map(function(p){ return [p.lng, p.lat]; });
+            if(ring.length) ring.push(ring[0]);
+            return { type: "Feature", properties: { name: "Roof " + (i + 1), area_m2: r.area_m2 },
+              geometry: { type: "Polygon", coordinates: [ring] } };
+          })
+        },
+        sizing_assumptions: { usable_fraction: USABLE_FRACTION, m2_per_kwp: M2_PER_KWP,
+          yield_kwh_per_kwp: YIELD_KWH_PER_KWP, tco2_per_mwh: TCO2_PER_MWH }
+      },
+      computed_results: {
+        solar: solar,
+        costs_kenya: computeCosts(finance),
+        finance_kenya: finance ? { recommended_kwp: finance.recKwp, sized_by: finance.sizedBy,
+          consumption_kwh_yr: finance.consYr, bill_monthly_ksh: finance.billMonthly,
+          offset: finance.offset, capex_ksh: finance.capex, lease_monthly_ksh: finance.lease,
+          tenor_months: finance.tenorMonths, avg_saving_ksh_yr: finance.avgSaveYr,
+          carbon_mix: finance.mix, reinvestment: finance.reinvest } : null,
+        health: health ? { r_base: health.rb, r_base_assumed: health.rbAssumed, uplift: health.U,
+          annual_dalys: health.annual, tier: health.tier, verification_factor: health.V,
+          gross_20yr: health.gross20, creditable_20yr: health.creditable,
+          pathways: health.rows.map(function(r){ return { name: r.name, volume: r.vol,
+            deaths_averted_yr: r.deaths, dalys_yr: r.dalys }; }),
+          parameters: HEAL } : null
+      },
+      submitted: now.toISOString()
+    };
+    downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), base + "_data.json");
+
+    // 2. PDF report
+    var pdfName = base + "_report.pdf";
+    var doc = null;
+    try{ doc = buildPdf(solar, health, finance, pin); }catch(e){ doc = null; }
+    if(doc){
+      doc.save(pdfName);
+    }else{
+      // offline fallback: plain-text report
+      downloadBlob(new Blob(["SHIELD site assessment for " + val("facName") +
+        " — the PDF generator could not load (no internet?). All information is preserved in " +
+        base + "_data.json. Please email that file and your bills to " + SHIELD_EMAIL + "."],
+        { type: "text/plain" }), base + "_report.txt");
+    }
+
+    // 3. email
+    var subject = "Site assessment — " + val("facName");
+    var body = "Hello SHIELD,\n\nPlease find attached:\n1. My assessment report (" + pdfName + ")\n2. The data file (" + base + "_data.json)\n3. " +
+      (chosenFiles.length || "Our") + " electricity bill file(s)\n\nFacility: " + val("facName") +
+      "\nContact: " + val("contactName") + ", " + val("contactPhone") + "\n\nThank you.";
+    document.getElementById("mailLink").href = "mailto:" + SHIELD_EMAIL +
+      "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+
+    try{ window.localStorage.removeItem("healDraft"); }catch(e){}
+    var box = document.getElementById("doneBox");
+    box.style.display = "block";
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  // prevent accidental Enter-key form submission on stage 1
+  form.addEventListener("submit", function(e){ e.preventDefault(); });
+})();
+</script>
+</body>
+</html>
