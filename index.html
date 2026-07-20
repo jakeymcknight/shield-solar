@@ -72,6 +72,14 @@
     font-family:'Familjen Grotesk',Arial,sans-serif; font-weight:700; font-size:14px;
     display:flex; align-items:center; justify-content:center;}
   .searchrow{display:flex; gap:10px; margin:6px 0 12px; flex-wrap:wrap;}
+  .searchwrap{position:relative; flex:1; min-width:200px;}
+  .searchwrap input{width:100%;}
+  .hospmenu{position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--line);
+    border-radius:0 0 8px 8px; box-shadow:0 6px 16px rgba(39,41,50,0.12); z-index:1000; max-height:280px;
+    overflow-y:auto; display:none;}
+  .hospmenu div{padding:10px 14px; cursor:pointer; font-size:15px; border-bottom:1px solid var(--mint-light);}
+  .hospmenu div:hover{background:var(--mint-light);}
+  .hospmenu .lvl{color:var(--teal); font-size:12.5px; font-weight:600; margin-left:6px;}
   .searchrow input{flex:1; min-width:200px;}
   #map{height:68vh; min-height:480px; border-radius:12px; border:1px solid var(--line); margin-top:6px;}
   .mapbtns{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
@@ -179,7 +187,10 @@
       <li><strong>Outline the roofs.</strong> Press "Draw a roof", tap each corner, press "Finish roof". Repeat for every good roof — flat or gently sloping, not shaded by trees or towers.</li>
     </ol>
     <div class="searchrow">
-      <input type="text" id="placeSearch" placeholder="Search town or facility, e.g. Meru Hospital Kenya">
+      <div class="searchwrap">
+        <input type="text" id="placeSearch" placeholder="Start typing your hospital, e.g. Siaya" autocomplete="off">
+        <div class="hospmenu" id="hospMenu"></div>
+      </div>
       <button type="button" class="tool" id="btnSearch">Search</button>
     </div>
     <div class="searchrow">
@@ -523,7 +534,7 @@
   // and restrict it to your website's domain.
   // The map requires this key — there is no fallback imagery.
   // ============================================================
-  var GOOGLE_MAPS_API_KEY = "AIzaSyCKAXUyX8ZnviGhDmngRAlnLR1oH3HbM6k";
+  var GOOGLE_MAPS_API_KEY = "";
 
   // ---- sizing assumptions for the indicative estimate ----
   var USABLE_FRACTION = 0.70;   // share of outlined roof usable for panels
@@ -728,6 +739,103 @@
       .catch(function(){ cb(null); });
   }
 
+  /* ================= HOSPITAL DIRECTORY ================= */
+  // SHIELD built-in directory: Kenyan national/county referral and major public hospitals
+  // (Level 4-6). Seed coordinates - verify/extend from the Kenya Master Health Facility
+  // List; each entry is [name, county, KEPH level, lat, lng].
+  var HOSPITALS = [
+    ["Kenyatta National Hospital", "Nairobi", 6, -1.3010, 36.8070],
+    ["Kenyatta University Teaching, Referral & Research Hospital", "Kiambu", 6, -1.1804, 36.9260],
+    ["Moi Teaching and Referral Hospital", "Uasin Gishu", 6, 0.5199, 35.2697],
+    ["Mama Lucy Kibaki Hospital", "Nairobi", 4, -1.2841, 36.9070],
+    ["Mbagathi Hospital", "Nairobi", 4, -1.3078, 36.7850],
+    ["Pumwani Maternity Hospital", "Nairobi", 4, -1.2790, 36.8390],
+    ["Coast General Teaching & Referral Hospital", "Mombasa", 5, -4.0547, 39.6720],
+    ["Jaramogi Oginga Odinga Teaching & Referral Hospital", "Kisumu", 5, -0.0917, 34.7680],
+    ["Kisumu County Referral Hospital", "Kisumu", 4, -0.0996, 34.7554],
+    ["Nakuru Level 5 Hospital", "Nakuru", 5, -0.2874, 36.0632],
+    ["Embu Level 5 Hospital", "Embu", 5, -0.5310, 37.4500],
+    ["Kakamega County General Hospital", "Kakamega", 5, 0.2827, 34.7519],
+    ["Meru Teaching and Referral Hospital", "Meru", 5, 0.0470, 37.6550],
+    ["Machakos Level 5 Hospital", "Machakos", 5, -1.5177, 37.2634],
+    ["Nyeri County Referral Hospital", "Nyeri", 5, -0.4197, 36.9510],
+    ["Garissa County Referral Hospital", "Garissa", 5, -0.4569, 39.6583],
+    ["Kisii Teaching and Referral Hospital", "Kisii", 5, -0.6817, 34.7680],
+    ["Thika Level 5 Hospital", "Kiambu", 5, -1.0396, 37.0900],
+    ["Kitale County Referral Hospital", "Trans Nzoia", 4, 1.0157, 35.0062],
+    ["Kericho County Referral Hospital", "Kericho", 4, -0.3689, 35.2863],
+    ["Siaya County Referral Hospital", "Siaya", 4, 0.0607, 34.2881],
+    ["Homa Bay County Teaching & Referral Hospital", "Homa Bay", 4, -0.5273, 34.4571],
+    ["Migori County Referral Hospital", "Migori", 4, -1.0634, 34.4731],
+    ["Bungoma County Referral Hospital", "Bungoma", 4, 0.5635, 34.5606],
+    ["Busia County Referral Hospital", "Busia", 4, 0.4608, 34.1115],
+    ["Vihiga County Referral Hospital", "Vihiga", 4, 0.0504, 34.7223],
+    ["Kitui County Referral Hospital", "Kitui", 4, -1.3667, 38.0106],
+    ["Makueni County Referral Hospital (Wote)", "Makueni", 4, -1.7809, 37.6290],
+    ["Kerugoya County Referral Hospital", "Kirinyaga", 4, -0.4989, 37.2803],
+    ["Murang'a County Referral Hospital", "Murang'a", 4, -0.7210, 37.1526],
+    ["Kiambu Level 4 Hospital", "Kiambu", 4, -1.1714, 36.8356],
+    ["Gatundu Level 5 Hospital", "Kiambu", 5, -1.0110, 36.9060],
+    ["Naivasha Sub-County Hospital", "Nakuru", 4, -0.7172, 36.4310],
+    ["Nanyuki Teaching & Referral Hospital", "Laikipia", 4, 0.0117, 37.0730],
+    ["Nyahururu County Referral Hospital", "Laikipia", 4, 0.0333, 36.3667],
+    ["Isiolo County Referral Hospital", "Isiolo", 4, 0.3546, 37.5822],
+    ["Marsabit County Referral Hospital", "Marsabit", 4, 2.3346, 37.9891],
+    ["Wajir County Referral Hospital", "Wajir", 4, 1.7488, 40.0573],
+    ["Mandera County Referral Hospital", "Mandera", 4, 3.9366, 41.8670],
+    ["Lodwar County Referral Hospital", "Turkana", 4, 3.1191, 35.5973],
+    ["Kapenguria County Referral Hospital", "West Pokot", 4, 1.2389, 35.1119],
+    ["Maralal County Referral Hospital", "Samburu", 4, 1.0968, 36.6980],
+    ["Kabarnet County Referral Hospital", "Baringo", 4, 0.4919, 35.7430],
+    ["Iten County Referral Hospital", "Elgeyo-Marakwet", 4, 0.6731, 35.5083],
+    ["Kapsabet County Referral Hospital", "Nandi", 4, 0.2030, 35.1050],
+    ["Bomet (Longisa) County Referral Hospital", "Bomet", 4, -0.8875, 35.3665],
+    ["Narok County Referral Hospital", "Narok", 4, -1.0921, 35.8600],
+    ["Kajiado County Referral Hospital", "Kajiado", 4, -1.8500, 36.7833],
+    ["Kilifi County Referral Hospital", "Kilifi", 4, -3.6305, 39.8499],
+    ["Msambweni County Referral Hospital", "Kwale", 4, -4.4700, 39.4800],
+    ["Lamu County Referral Hospital", "Lamu", 4, -2.2696, 40.9006],
+    ["Hola County Referral Hospital", "Tana River", 4, -1.5000, 40.0300],
+    ["Moi County Referral Hospital (Voi)", "Taita-Taveta", 4, -3.3961, 38.5561],
+    ["Chuka County Referral Hospital", "Tharaka-Nithi", 4, -0.3325, 37.6520],
+    ["Maua Methodist / Meru North (Maua)", "Meru", 4, 0.2340, 37.9390],
+    ["Nyamira County Referral Hospital", "Nyamira", 4, -0.5633, 34.9358],
+    ["Ol Kalou (JM Kariuki) County Referral Hospital", "Nyandarua", 4, -0.2733, 36.3789],
+    ["Eldoret (Uasin Gishu) District Hospital", "Uasin Gishu", 4, 0.5140, 35.2800],
+    ["Rachuonyo County Hospital (Oyugis)", "Homa Bay", 4, -0.5070, 34.7370],
+    ["Malindi Sub-County Hospital", "Kilifi", 4, -3.2138, 40.1169]
+  ];
+
+  function hospMatches(q){
+    q = q.toLowerCase().trim();
+    if(q.length < 2) return [];
+    return HOSPITALS.filter(function(h){
+      return (h[0] + " " + h[1]).toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 8);
+  }
+  function goToHospital(h){
+    document.getElementById("placeSearch").value = h[0];
+    hideHospMenu();
+    if(!api) return;
+    api.setView(h[3], h[4], 17);
+    setStatus("Showing " + h[0] + " (Level " + h[2] + ", " + h[1] + "). Check the buildings match, adjust if needed, then pin your facility.");
+  }
+  function hideHospMenu(){ document.getElementById("hospMenu").style.display = "none"; }
+  document.getElementById("placeSearch").addEventListener("input", function(){
+    var m = hospMatches(this.value);
+    var menu = document.getElementById("hospMenu");
+    if(!m.length){ hideHospMenu(); return; }
+    menu.innerHTML = "";
+    m.forEach(function(h){
+      var d = document.createElement("div");
+      d.innerHTML = h[0] + ' <span class="lvl">L' + h[2] + " · " + h[1] + "</span>";
+      d.addEventListener("mousedown", function(e){ e.preventDefault(); goToHospital(h); });
+      menu.appendChild(d);
+    });
+    menu.style.display = "block";
+  });
+  document.getElementById("placeSearch").addEventListener("blur", function(){ setTimeout(hideHospMenu, 200); });
+
   /* ================= shared map UI handlers ================= */
   document.getElementById("btnSearch").addEventListener("click", doSearch);
   document.getElementById("placeSearch").addEventListener("keydown", function(e){
@@ -736,6 +844,8 @@
   function doSearch(){
     var q = document.getElementById("placeSearch").value.trim();
     if(!q || !api) return;
+    var m = hospMatches(q);
+    if(m.length){ goToHospital(m[0]); return; }
     setStatus("Searching…");
     geocodeChain(searchCandidates(q), function(ll, matched){
       if(ll){
@@ -976,12 +1086,13 @@
     DIESEL_KSH_PER_LITRE: 222.86, // EPRA Nairobi pump price, Jul-Aug 2026 cycle
     GEN_KWH_PER_LITRE: 3.0,      // typical small genset output per litre
     GEN_OM_FACTOR: 1.15,         // +15% for genset servicing, oil, parts
-    SOLAR_CAPEX_KSH_PER_KWP: 195000, // installed solar + storage (~USD 1,500/kWp at ~130 KSh/USD)
+    SOLAR_CAPEX_KSH_PER_KWP: 165000, // installed solar + storage, incl. VAT (Astonfield Siaya quote basis ~KSh 163k/kWp)
     SOLAR_OM_PCT_PER_YR: 0.015,  // annual O&M as share of capex
     BATTERY_REPLACE_KSH_PER_KWP: 46000, // battery bank replacement around year 15
     GRID_EF: 0.30,               // tCO2e/MWh, Kenyan grid (largely geothermal/hydro)
     DIESEL_EF: 0.80,             // tCO2e/MWh, diesel generation incl. upstream
-    MAX_OFFSET: 0.55,            // max share of consumption solar+storage can realistically serve
+    TARGET_OFFSET: 0.45,         // design target: solar serves ~45% of load, so the lease repays in ~5-6 yrs
+    MAX_OFFSET: 0.55,            // hard cap on the share solar+storage can realistically serve
     LEASE_BILL_SHARE: 0.90,      // lease rule: lease + remaining bill = 90% of prior bill
     REINVEST_REALISATION: 0.5    // share of freed savings assumed to reach front-line care
   };
@@ -1020,7 +1131,7 @@
     var consM = num("kwhMonth");
     var consYr = consM ? consM * 12 : (B ? B / KENYA.GRID_KSH_PER_KWH * 12 : null);
     var roofKwp = solar.hasRoofs ? solar.kwp : null;
-    var capKwp = consYr ? consYr * KENYA.MAX_OFFSET / YIELD_KWH_PER_KWP : null;
+    var capKwp = consYr ? consYr * KENYA.TARGET_OFFSET / YIELD_KWH_PER_KWP : null;
     var recKwp, sizedBy;
     if(roofKwp !== null && capKwp !== null){
       recKwp = Math.min(roofKwp, capKwp);
@@ -1280,7 +1391,7 @@
         fmt(YIELD_KWH_PER_KWP, 0) + " kWh = about " + fmt(solar.mwh_yr, 1) + " MWh per year.");
       if(finance){
         para("Recommended size. Your roofs could carry about " + fmt(solar.kwp, 0) + " kWp, but a system should be sized to your electricity use, not just your roof. " +
-          (finance.consYr ? "From your " + (num("kwhMonth") ? "reported consumption" : "bill") + " (about " + fmt(finance.consYr, 0) + " kWh per year), solar with storage can realistically serve up to " + fmt(KENYA.MAX_OFFSET * 100, 0) + "% of your load, which caps the system at about " + fmt(finance.capKwp, 0) + " kWp. " : "") +
+          (finance.consYr ? "From your " + (num("kwhMonth") ? "reported consumption" : "bill") + " (about " + fmt(finance.consYr, 0) + " kWh per year), we size the system so solar serves about " + fmt(KENYA.TARGET_OFFSET * 100, 0) + "% of your load — the sweet spot where the lease stays affordable and repays in roughly five to six years. That target implies about " + fmt(finance.capKwp, 0) + " kWp. " : "") +
           "We therefore recommend about " + fmt(finance.recKwp, 0) + " kWp (" + (finance.sizedBy === "load" ? "your consumption, not your roof, is the limit" : "your roof is the limit") + "), generating about " + fmt(finance.genYrMwh, 1) + " MWh per year.");
         para("Carbon avoided. What matters is what each solar unit replaces. From your power sources, we assume " + fmt(finance.mix.gs * 100, 0) + "% of generation displaces grid electricity (Kenya's grid is largely geothermal and hydro, so only " + KENYA.GRID_EF + " tCO2e per MWh) and " + fmt(finance.mix.ds * 100, 0) + "% displaces diesel (" + KENYA.DIESEL_EF + " tCO2e per MWh). That gives about " + fmt(finance.co2Yr, 1) + " tonnes of CO2e avoided per year — a deliberately honest figure rather than a flattering one.");
       }
@@ -1316,9 +1427,9 @@
       table(["Item", "Value", "How it is calculated"], [
         ["System cost", "KSh " + money(finance.capex), fmt(finance.recKwp, 0) + " kWp × KSh " + fmt(KENYA.SOLAR_CAPEX_KSH_PER_KWP, 0) + "/kWp"],
         ["Your current monthly bill", "KSh " + money(finance.billMonthly), "As reported (confirmed from your bills)"],
-        ["Solar share of your load", fmt(finance.offset * 100, 0) + "%", "System generation ÷ your annual consumption, capped at " + fmt(KENYA.MAX_OFFSET * 100, 0) + "%"],
+        ["Solar share of your load", fmt(finance.offset * 100, 0) + "%", "System generation ÷ your annual consumption (design target " + fmt(KENYA.TARGET_OFFSET * 100, 0) + "%, cap " + fmt(KENYA.MAX_OFFSET * 100, 0) + "%)"],
         ["Monthly lease", "KSh " + money(finance.lease), "Lease + remaining grid bill = " + (KENYA.LEASE_BILL_SHARE * 100) + "% of your prior bill — you save from month one"],
-        ["Lease period", "~" + fmt(finance.tenorMonths, 0) + " months (" + fmt(finance.tenorMonths / 12, 1) + " years)", "System cost ÷ monthly lease, at 0% interest"],
+        ["Lease period", "~" + fmt(finance.tenorMonths, 0) + " months (" + fmt(finance.tenorMonths / 12, 1) + " years)", "System cost ÷ monthly lease, at 0% interest" + (finance.sizedBy === "roof" && finance.offset < KENYA.TARGET_OFFSET - 0.05 ? ". Your roofs limit the system below the " + fmt(KENYA.TARGET_OFFSET * 100, 0) + "% target, which lengthens the lease — more roof area would shorten it" : "")],
         ["Saving during the lease", "KSh " + money(finance.saveLeaseYr) + " / year", (100 - KENYA.LEASE_BILL_SHARE * 100) + "% of your prior bill"],
         ["Saving after the lease", "KSh " + money(finance.savePostYr) + " / year", "Solar share of the bill, minus maintenance"],
         ["Average saving over 20 years", "KSh " + money(finance.avgSaveYr) + " / year", "Lease-period and post-lease years combined"]
