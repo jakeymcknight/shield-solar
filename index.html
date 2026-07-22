@@ -118,6 +118,7 @@
     padding:17px 32px; font-size:15px; font-weight:600; cursor:pointer; width:100%;
     font-family:'Archivo',Arial,sans-serif; text-transform:uppercase; letter-spacing:1.5px;}
   button.primary:hover{background:var(--teal-dark);}
+  button.primary:disabled{background:#9DB8B6; cursor:not-allowed;}
   button.ghost{background:none; border:none; color:var(--teal); font-size:15px; cursor:pointer;
     text-decoration:underline; font-family:inherit; padding:12px 0;}
   .stagebtns{display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-top:10px;}
@@ -485,7 +486,7 @@
 
       <div class="stagebtns">
         <button type="button" class="ghost" id="backToMap">← Back to the map</button>
-        <button type="button" class="primary" id="toStage3">See my results →</button>
+        <button type="button" class="primary" id="toStage3" disabled title="Tick the agreement box in section 8 first">See my results →</button>
       </div>
       <div class="stageErr" id="stage1Err">A few required fields are missing — they're marked in red above.</div>
     </form>
@@ -508,7 +509,7 @@
     <div id="doneBox">
       <h2>Almost done — two steps left</h2>
       <ol>
-        <li>Two files have just been <strong>downloaded to this device</strong> (check your Downloads folder): your <strong>PDF assessment report</strong> and a small data file for SHIELD's analysts.</li>
+        <li>Two files have just been <strong>downloaded to this device</strong> (check your Downloads folder): your <strong>PDF assessment report</strong> and a data table (CSV — opens in Excel) for SHIELD's analysts.</li>
         <li>Email both files <strong>together with your bill photos</strong> to <strong id="shieldEmailText"></strong>. The button below opens a ready-made email — just attach the files before sending.</li>
       </ol>
       <a class="mailbtn" id="mailLink" href="#">Open email to SHIELD</a>
@@ -575,6 +576,11 @@
     }
     setStage(3);
     renderResults();
+  });
+
+  // "See my results" stays locked until consent is given
+  document.getElementById("consent").addEventListener("change", function(){
+    document.getElementById("toStage3").disabled = !this.checked;
   });
 
   // the map is the front door — load it immediately
@@ -817,8 +823,15 @@
     document.getElementById("placeSearch").value = h[0];
     hideHospMenu();
     if(!api) return;
-    api.setView(h[3], h[4], 17);
+    api.setView(h[3], h[4], 16);
     setStatus("Showing " + h[0] + " (Level " + h[2] + ", " + h[1] + "). Check the buildings match, adjust if needed, then pin your facility.");
+    // refine to the exact spot Google Maps lists, when the geocoder finds it nearby
+    api.geocode(h[0] + ", " + h[1] + ", Kenya", function(ll){
+      if(ll && Math.abs(ll.lat - h[3]) + Math.abs(ll.lng - h[4]) < 0.15){
+        api.setView(ll.lat, ll.lng, 17);
+        setStatus("Centred on " + h[0] + " as listed on the map. Check the buildings match, then pin your facility.");
+      }
+    });
   }
   function hideHospMenu(){ document.getElementById("hospMenu").style.display = "none"; }
   document.getElementById("placeSearch").addEventListener("input", function(){
@@ -1572,65 +1585,84 @@
     var health = computeHealth(finance);
     var base = "SHIELD_site_assessment_" + (val("facName") || "facility").replace(/[^a-z0-9]+/gi, "_");
 
-    // 1. data file (for SHIELD analysts / HEAL calculator import)
-    var data = {
-      stage1_questionnaire: {
-        facility: { name: val("facName"), type: val("facType"), beds: num("beds"),
-          country: val("country"), district: val("district") },
-        catchment: { population: num("catchment"), confidence: radio("catchConf") },
-        services_annualised: {
-          deliveries_per_year: mult("deliveries", 12),
-          csections_per_year: mult("csections", 12),
-          opd_visits_per_year: mult("opdDay", 365),
-          admissions_per_year: mult("admissions", 12),
-          children_vaccinated_per_year: mult("vaxKids", 12),
-          vaccination_mode: radio("vax"), data_source: radio("svcConf")
-        },
-        energy_baseline: {
-          sources: checks("src"), hours_power_per_day: num("hrsPower"),
-          r_base_estimate: rbase(), night_availability: radio("night"),
-          care_interrupted: radio("interrupt"), monthly_bill: val("billAmt"),
-          monthly_fuel: val("fuelAmt"), generator: val("genSize")
-        },
-        equipment: checks("eq"), outage_impact: val("outageImpact"),
-        bill_files: chosenFiles.map(function(f){ return f.name; }),
-        contact: { name: val("contactName"), role: val("contactRole"),
-          email: val("contactEmail"), phone: val("contactPhone") },
-        notes: val("notes")
-      },
-      stage2_roof_capture: {
-        pin: pin ? { lat: pin.lat, lng: pin.lng } : null, gps_text: val("gps"),
-        imagery_provider: api ? "google" : null,
-        roofs_geojson: {
-          type: "FeatureCollection",
-          features: roofs.map(function(r, i){
-            var ring = r.latlngs.map(function(p){ return [p.lng, p.lat]; });
-            if(ring.length) ring.push(ring[0]);
-            return { type: "Feature", properties: { name: "Roof " + (i + 1), area_m2: r.area_m2 },
-              geometry: { type: "Polygon", coordinates: [ring] } };
-          })
-        },
-        sizing_assumptions: { usable_fraction: USABLE_FRACTION, m2_per_kwp: M2_PER_KWP,
-          yield_kwh_per_kwp: YIELD_KWH_PER_KWP, tco2_per_mwh: TCO2_PER_MWH }
-      },
-      computed_results: {
-        solar: solar,
-        costs_kenya: computeCosts(finance),
-        finance_kenya: finance ? { recommended_kwp: finance.recKwp, sized_by: finance.sizedBy,
-          consumption_kwh_yr: finance.consYr, bill_monthly_ksh: finance.billMonthly,
-          offset: finance.offset, capex_ksh: finance.capex, lease_monthly_ksh: finance.lease,
-          tenor_months: finance.tenorMonths, avg_saving_ksh_yr: finance.avgSaveYr,
-          carbon_mix: finance.mix, reinvestment: finance.reinvest } : null,
-        health: health ? { r_base: health.rb, r_base_assumed: health.rbAssumed, uplift: health.U,
-          annual_dalys: health.annual, tier: health.tier, verification_factor: health.V,
-          gross_20yr: health.gross20, creditable_20yr: health.creditable,
-          pathways: health.rows.map(function(r){ return { name: r.name, volume: r.vol,
-            deaths_averted_yr: r.deaths, dalys_yr: r.dalys }; }),
-          parameters: HEAL } : null
-      },
-      submitted: now.toISOString()
-    };
-    downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), base + "_data.json");
+    // 1. data table (CSV — opens directly in Excel) for SHIELD's analysts
+    function csvEsc(v){
+      v = (v === null || v === undefined) ? "" : String(v);
+      return '"' + v.replace(/"/g, '""') + '"';
+    }
+    var rows = [["Section", "Field", "Value"]];
+    function add(s, f, v){ rows.push([s, f, v]); }
+    add("Facility", "Name", val("facName"));
+    add("Facility", "Type", val("facType"));
+    add("Facility", "Beds", val("beds"));
+    add("Facility", "Country", val("country"));
+    add("Facility", "District/town", val("district"));
+    add("Facility", "Contact name", val("contactName"));
+    add("Facility", "Contact role", val("contactRole"));
+    add("Facility", "Contact email", val("contactEmail"));
+    add("Facility", "Contact phone", val("contactPhone"));
+    add("Location", "Facility pin (lat, lng)", pin ? pin.lat.toFixed(6) + ", " + pin.lng.toFixed(6) : val("gps"));
+    add("Location", "Imagery", api ? "Google" : "map not used");
+    roofs.forEach(function(r, i){
+      add("Roofs", "Roof " + (i + 1) + " area (m2)", r.area_m2);
+      add("Roofs", "Roof " + (i + 1) + " corners (lat lng; ...)",
+        r.latlngs.map(function(pt){ return pt.lat.toFixed(6) + " " + pt.lng.toFixed(6); }).join("; "));
+    });
+    add("Catchment", "Population", val("catchment"));
+    add("Catchment", "Confidence", radio("catchConf"));
+    add("Services", "Deliveries per month", val("deliveries"));
+    add("Services", "C-sections per month", val("csections"));
+    add("Services", "Outpatients per day", val("opdDay"));
+    add("Services", "Admissions per month", val("admissions"));
+    add("Services", "Children vaccinated per month", val("vaxKids"));
+    add("Services", "Vaccination mode", radio("vax"));
+    add("Services", "Data source", radio("svcConf"));
+    add("Energy", "Power sources", checks("src"));
+    add("Energy", "Hours of power per day", val("hrsPower"));
+    add("Energy", "Baseline reliability estimate", rbase());
+    add("Energy", "Power at night", radio("night"));
+    add("Energy", "Care interrupted", radio("interrupt"));
+    add("Energy", "Monthly bill (KSh)", val("billAmt"));
+    add("Energy", "Monthly consumption (kWh)", val("kwhMonth"));
+    add("Energy", "Monthly generator fuel", val("fuelAmt"));
+    add("Energy", "Generator", val("genSize"));
+    add("Energy", "Equipment", checks("eq"));
+    add("Energy", "Outage impact (own words)", val("outageImpact"));
+    add("Priorities", "Savings priorities", checksArr("reinvest").join("; "));
+    add("Bills", "Files to attach", chosenFiles.map(function(f){ return f.name; }).join("; "));
+    if(finance){
+      add("Results", "Recommended system (kWp)", Math.round(finance.recKwp * 10) / 10);
+      add("Results", "Sized by", finance.sizedBy);
+      add("Results", "Annual consumption (kWh)", finance.consYr ? Math.round(finance.consYr) : "");
+      add("Results", "Solar share of load", finance.offset ? Math.round(finance.offset * 100) + "%" : "");
+      add("Results", "Generation (MWh/yr)", Math.round(finance.genYrMwh * 10) / 10);
+      add("Results", "20-yr generation (MWh)", Math.round(finance.gen20Mwh));
+      add("Results", "Capex (KSh)", Math.round(finance.capex));
+      add("Results", "Monthly lease (KSh)", finance.lease ? Math.round(finance.lease) : "");
+      add("Results", "Lease tenor (months)", finance.tenorMonths ? Math.round(finance.tenorMonths) : "");
+      add("Results", "Average saving (KSh/yr)", finance.avgSaveYr ? Math.round(finance.avgSaveYr) : "");
+      add("Results", "Carbon factor (tCO2e/MWh)", Math.round(finance.mix.ef * 100) / 100);
+      add("Results", "CO2e avoided (t/yr)", Math.round(finance.co2Yr * 10) / 10);
+      if(finance.reinvest){
+        finance.reinvest.items.forEach(function(it){
+          add("Reinvestment", it.label + " (KSh/yr; hLY/yr)", Math.round(it.fundsYr) + "; " + (Math.round(it.dalysYr * 10) / 10));
+        });
+      }
+    }
+    if(health){
+      health.rows.forEach(function(r){
+        add("Health", r.name + " (hLY/yr)", Math.round(r.dalys * 10) / 10);
+      });
+      add("Health", "Annual total (hLY/yr)", Math.round(health.annual * 10) / 10);
+      add("Health", "R_base / uplift U", health.rb + " / " + (Math.round(health.U * 100) / 100));
+      add("Health", "Tier / verification factor", health.tier + " / " + health.V);
+      add("Health", "Creditable 20-yr (hLY)", Math.round(health.creditable));
+      if(finance && finance.gen20Mwh > 0) add("Health", "hLY per H:REC (MWh)", Math.round(health.creditable / finance.gen20Mwh * 100) / 100);
+    }
+    add("Meta", "Submitted", now.toISOString());
+    add("Meta", "Consent given", "yes");
+    var csv = rows.map(function(r){ return r.map(csvEsc).join(","); }).join("\r\n");
+    downloadBlob(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }), base + "_data.csv");
 
     // 2. PDF report
     var pdfName = base + "_report.pdf";
@@ -1648,7 +1680,7 @@
 
     // 3. email
     var subject = "Site assessment — " + val("facName");
-    var body = "Hello SHIELD,\n\nPlease find attached:\n1. My assessment report (" + pdfName + ")\n2. The data file (" + base + "_data.json)\n3. " +
+    var body = "Hello SHIELD,\n\nPlease find attached:\n1. My assessment report (" + pdfName + ")\n2. The data table (" + base + "_data.csv)\n3. " +
       (chosenFiles.length || "Our") + " electricity bill file(s)\n\nFacility: " + val("facName") +
       "\nContact: " + val("contactName") + ", " + val("contactPhone") + "\n\nThank you.";
     document.getElementById("mailLink").href = "mailto:" + SHIELD_EMAIL +
